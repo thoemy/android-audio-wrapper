@@ -28,8 +28,6 @@
 #include "common.h"
 #include "ics_audio.h"
 
-static struct audio_module *global_wrapped_module = 0;
-
 struct wrapper_audio_device {
     struct audio_hw_device device;
     struct ics_audio_hw_device *wrapped_device;
@@ -552,17 +550,9 @@ static int adev_open(const hw_module_t* module, const char* name,
     if (!adev)
         return -ENOMEM;
 
-    /* TODO: Move vendor- prefix into function */
-    if (load_vendor_module("vendor-audio.primary", (const hw_module_t **) &global_wrapped_module)) {
-        ALOGE("Failed to load vendor audio.primary module");
-        free(adev);
-        return -EINVAL;
-    }
-
-    ret = global_wrapped_module->common.methods->open((const hw_module_t*)global_wrapped_module,
-                                                      name, (hw_device_t**)&(adev->wrapped_device));
+    ret = load_vendor_module(module, name, (hw_device_t**) &adev->wrapped_device,
+                             AUDIO_HARDWARE_MODULE_ID_PRIMARY);
     if(ret) {
-        ALOGE("vendor audio.primary open fail");
         free(adev);
         return ret;
     }

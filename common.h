@@ -28,7 +28,8 @@ enum flags_conversion_mode {
 };
 typedef enum flags_conversion_mode flags_conversion_mode_t;
 
-int load_vendor_module(const char * module_name, const hw_module_t ** vendor_module);
+int load_vendor_module(const hw_module_t* wrapper_module, const char* name,
+                       hw_device_t** device, const char* inst);
 char * fixup_audio_parameters(const char *kv_pairs, flags_conversion_mode_t mode);
 
 enum {

@@ -17,22 +17,43 @@
 #define LOG_TAG "AudioWrapperCommon"
 // #define LOG_NDEBUG 0
 
+#include <string.h>
+#include <limits.h>
+
 #include <cutils/log.h>
+
 #include "common.h"
 
-int load_vendor_module(const char * module_name, const hw_module_t ** vendor_module)
+int load_vendor_module(const hw_module_t* wrapper_module, const char* name,
+                       hw_device_t** device, const char* inst)
 {
-    int rv = 0;
+    const hw_module_t* module;
+    char module_name[PATH_MAX];
+    int ret = 0;
     ALOGI("%s", __FUNCTION__);
 
-    if(*vendor_module)
-        return 0;
+    // Create the module name based on the wrapper module id and inst.
+    if(inst)
+        snprintf(module_name, PATH_MAX, "vendor-%s.%s", wrapper_module->id, inst);
+    else
+        snprintf(module_name, PATH_MAX, "vendor-%s", wrapper_module->id);
 
-    rv = hw_get_module(module_name, vendor_module);
-    if (rv)
-        ALOGE("failed to open %s module", module_name);
+    ret = hw_get_module(module_name, &module);
+    ALOGE_IF(ret, "%s: couldn't load vendor module %s (%s)", __FUNCTION__,
+             module_name, strerror(-ret));
+    if (ret)
+        goto out;
 
-    return rv;
+    ret = module->methods->open(module, name, device);
+    ALOGE_IF(ret, "%s: couldn't open hw device in %s (%s)", __FUNCTION__,
+             module_name, strerror(-ret));
+    if(ret)
+        goto out;
+
+    return 0;
+ out:
+    *device = NULL;
+    return ret;
 }
 
 audio_devices_t convert_ics_to_jb(ics_audio_devices_t ics_device) {

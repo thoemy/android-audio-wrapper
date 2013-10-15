@@ -34,8 +34,6 @@
 #include "aps_wrapper.h"
 #include "common.h"
 
-static audio_policy_module_t *global_wrapped_module = 0;
-
 struct wrapper_ap_module {
     struct audio_policy_module module;
 };
@@ -423,8 +421,8 @@ static int wrapper_ap_dev_close(hw_device_t* device)
 static int wrapper_ap_dev_open(const hw_module_t* module, const char* name,
                                hw_device_t** device)
 {
-    int ret = 0;
     struct wrapper_ap_device *dev;
+    int ret = 0;
 
     ALOGI("Wrapping vendor audio policy");
 
@@ -437,17 +435,8 @@ static int wrapper_ap_dev_open(const hw_module_t* module, const char* name,
     if (!dev)
         return -ENOMEM;
 
-    /* TODO: Move vendor- prefix into function */
-    if (load_vendor_module("vendor-audio_policy", (const hw_module_t **) &global_wrapped_module)) {
-        ALOGE("Failed to load vendor module");
-        free(dev);
-        return -EINVAL;
-    }
-
-    ret = global_wrapped_module->common.methods->open((const hw_module_t*)global_wrapped_module,
-                                                      name, (hw_device_t**)&(dev->wrapped_device));
+    ret = load_vendor_module(module, name, (hw_device_t**) &dev->wrapped_device, NULL);
     if(ret) {
-        ALOGE("vendor audio_policy open fail");
         free(dev);
         return ret;
     }
