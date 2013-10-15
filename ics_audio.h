@@ -52,14 +52,6 @@ struct ics_audio_stream_out {
     int (*get_render_position)(const struct ics_audio_stream_out *stream,
                                uint32_t *dsp_frames);
 
-#if false
-    /**
-     * get the local time at which the next write to the audio driver will be presented.
-     * The units are microseconds, where the epoch is decided by the local audio HAL.
-     */
-    int (*get_next_write_timestamp)(const struct ics_audio_stream_out *stream,
-                                    int64_t *timestamp);
-#endif
 };
 typedef struct ics_audio_stream_out ics_audio_stream_out_t;
 

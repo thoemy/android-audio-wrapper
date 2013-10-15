@@ -1,0 +1,47 @@
+Wrapper around audio HALs that are compiled against the ICS API.
+
+Makes it possible to build a ROM without ICS_AUDIO_BLOB set or other workarounds
+in the framework. Parts of the Android framework are backwards compatible with
+audio HALs that only implement the ICS API. The audio HAL API however is not
+designed to be ABI compatible and a recompilation would be necessary (well with
+adjustments). Since we cannot do that we need to either add support for it into
+the framework (ICS_AUDIO_BLOB / MR0_AUDIO_BLOB) or wrap the audio HALs.
+
+The wrapper does the following things:
+   * wraps audio_policy and audio.primary HALs
+   * wraps audio_policy_service_ops
+   * converts the audio_devices_t enum between the ICS and JB format
+
+
+
+Only tested on endeavoru CM 10.2 nightlies.
+
+
+TODO
+----
+
+* Grep for TODO :)
+* Other parameters passed with the set/get_parameters functions contain
+  audio_devices_t values that might need to be converted
+* Better logging configurability (maybe at runtime)
+* Expects the vendor blobs to be named vendor-audio_policy.tegra.so and
+  vendor-audio.primary.tegra.so at the moment.
+
+
+Known Issues
+------------
+
+* Sound recorder behaves weird when playing your recording
+* set_stream_volume_index_for_device is not properly emulated resulting in wrong
+  volumes for streams after the device is rebooted. This is caused by
+  AudioFlinger setting the volumes for each stream on each device. Since the
+  function is not properly implemented the value of the last device will be
+  used as the initial volume.
+  See StreamState.applyAllVolumes in AudioService.java.
+  Framework workaround for headset/speaker devices: http://review.cyanogenmod.org/#/c/33778/
+
+
+Misc
+----
+
+    $ adb logcat -s AudioPolicyServiceWrapper:D AudioWrapper:D AudioPolicyWrapper:D AudioWrapperCommon:D

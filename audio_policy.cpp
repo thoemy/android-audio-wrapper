@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2011 The Android Open Source Project
+ * Copyright (C) 2013 Thomas Wendt <thoemy@gmx.net>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +34,7 @@
 #include "aps_wrapper.h"
 #include "common.h"
 
-static audio_policy_module_t *gVendorModule = 0;
+static audio_policy_module_t *global_wrapped_module = 0;
 
 struct wrapper_ap_module {
     struct audio_policy_module module;
@@ -41,24 +42,40 @@ struct wrapper_ap_module {
 
 struct wrapper_ap_device {
     struct audio_policy_device device;
-    struct ics_audio_policy_device *vendor_device;
+    struct ics_audio_policy_device *wrapped_device;
 };
 
 struct wrapper_audio_policy {
     struct audio_policy policy;
-
-    struct audio_policy_service_ops *aps_ops;
-    void *service;
-
-    struct ics_audio_policy *vendor_policy;
-    struct wrapped_aps * wrapped_aps;
+    struct ics_audio_policy *wrapped_policy;
+    void * aps_wrapper;
 };
 
-#define DEVICE(d) ((struct wrapper_ap_device*) d)->device
-#define VENDOR(d) ((struct wrapper_ap_device*) d)->vendor_device
+/**
+ * Get the wrapped policy device from audio_policy_device struct.
+ */
+#define WRAPPED_DEVICE(d) ((struct wrapper_ap_device*) d)->wrapped_device
 
-/* Accesses the vendor policy from the audio policy struct */
-#define VENDOR_POLICY(p) ((struct wrapper_audio_policy*) p)->vendor_policy
+/**
+ * Get the wrapped policy from the audio_policy struct.
+ */
+#define WRAPPED_POLICY(p) ((struct wrapper_audio_policy*) p)->wrapped_policy
+
+/**
+ * Calls func on the wrapped wrapped audio policy and returns the result.
+ */
+#define RETURN_WRAPPED_CALL(policy, func, ...) ({\
+    ALOGV("%s", __FUNCTION__); \
+    return WRAPPED_POLICY(policy)->func(WRAPPED_POLICY(policy), ##__VA_ARGS__); \
+})
+
+/**
+ * Calls func on the wrapped wrapped audio policy.
+ */
+#define WRAPPED_CALL(policy, func, ...) ({\
+    ALOGV("%s", __FUNCTION__); \
+    WRAPPED_POLICY(policy)->func(WRAPPED_POLICY(policy), ##__VA_ARGS__); \
+})
 
 
 static int ap_set_device_connection_state(struct audio_policy *pol,
@@ -66,10 +83,8 @@ static int ap_set_device_connection_state(struct audio_policy *pol,
                                           audio_policy_dev_state_t state,
                                           const char *device_address)
 {
-    ALOGW("%s", __FUNCTION__);
     device = convert_jb_to_ics(device);
-    return VENDOR_POLICY(pol)->set_device_connection_state(VENDOR_POLICY(pol),
-                                                           device, state, device_address);
+    RETURN_WRAPPED_CALL(pol, set_device_connection_state, device, state, device_address);
 }
 
 static audio_policy_dev_state_t ap_get_device_connection_state(
@@ -77,41 +92,35 @@ static audio_policy_dev_state_t ap_get_device_connection_state(
                                             audio_devices_t device,
                                             const char *device_address)
 {
-    ALOGW("%s", __FUNCTION__);
     device = convert_jb_to_ics(device);
-    return VENDOR_POLICY(pol)->get_device_connection_state(VENDOR_POLICY(pol),
-                                                           device, device_address);
+    RETURN_WRAPPED_CALL(pol, get_device_connection_state, device, device_address);
 }
 
 static void ap_set_phone_state(struct audio_policy *pol, audio_mode_t state)
 {
-    ALOGW("%s", __FUNCTION__);
-    VENDOR_POLICY(pol)->set_phone_state(VENDOR_POLICY(pol), state);
+    WRAPPED_POLICY(pol)->set_phone_state(WRAPPED_POLICY(pol), state);
 }
 
 // deprecated, never called
 static void ap_set_ringer_mode(struct audio_policy *pol, uint32_t mode,
                                uint32_t mask)
 {
-    ALOGW("%s", __FUNCTION__);
-    VENDOR_POLICY(pol)->set_ringer_mode(VENDOR_POLICY(pol), mode, mask);
+    WRAPPED_CALL(pol, set_ringer_mode, mode, mask);
 }
 
 static void ap_set_force_use(struct audio_policy *pol,
                           audio_policy_force_use_t usage,
                           audio_policy_forced_cfg_t config)
 {
-    ALOGW("%s", __FUNCTION__);
-    VENDOR_POLICY(pol)->set_force_use(VENDOR_POLICY(pol), usage, config);
+    WRAPPED_CALL(pol, set_force_use, usage, config);
 }
 
-    /* retreive current device category forced for a given usage */
+/* retreive current device category forced for a given usage */
 static audio_policy_forced_cfg_t ap_get_force_use(
                                                const struct audio_policy *pol,
                                                audio_policy_force_use_t usage)
 {
-    ALOGW("%s", __FUNCTION__);
-    return VENDOR_POLICY(pol)->get_force_use(VENDOR_POLICY(pol), usage);
+    RETURN_WRAPPED_CALL(pol, get_force_use, usage);
 }
 
 /* if can_mute is true, then audio streams that are marked ENFORCED_AUDIBLE
@@ -119,13 +128,12 @@ static audio_policy_forced_cfg_t ap_get_force_use(
 static void ap_set_can_mute_enforced_audible(struct audio_policy *pol,
                                              bool can_mute)
 {
-    ALOGW("%s", __FUNCTION__);
-    VENDOR_POLICY(pol)->set_can_mute_enforced_audible(VENDOR_POLICY(pol), can_mute);
+    WRAPPED_CALL(pol, set_can_mute_enforced_audible, can_mute);
 }
 
 static int ap_init_check(const struct audio_policy *pol)
 {
-    return VENDOR_POLICY(pol)->init_check(VENDOR_POLICY(pol));
+    RETURN_WRAPPED_CALL(pol, init_check);
 }
 
 static audio_io_handle_t ap_get_output(struct audio_policy *pol,
@@ -135,29 +143,25 @@ static audio_io_handle_t ap_get_output(struct audio_policy *pol,
                                        audio_channel_mask_t channelMask,
                                        audio_output_flags_t flags)
 {
-    ALOGW("%s", __FUNCTION__);
-    return VENDOR_POLICY(pol)->get_output(VENDOR_POLICY(pol), stream, sampling_rate, format, channelMask, flags);
+    RETURN_WRAPPED_CALL(pol, get_output, stream, sampling_rate, format, channelMask, flags);
 }
 
 static int ap_start_output(struct audio_policy *pol, audio_io_handle_t output,
                            audio_stream_type_t stream, int session)
 {
-    ALOGW("%s", __FUNCTION__);
-    return VENDOR_POLICY(pol)->start_output(VENDOR_POLICY(pol), output, stream, session);
+    RETURN_WRAPPED_CALL(pol, start_output, output, stream, session);
 }
 
 static int ap_stop_output(struct audio_policy *pol, audio_io_handle_t output,
                           audio_stream_type_t stream, int session)
 {
-    ALOGW("%s", __FUNCTION__);
-    return VENDOR_POLICY(pol)->stop_output(VENDOR_POLICY(pol), output, stream, session);
+    RETURN_WRAPPED_CALL(pol, stop_output, output, stream, session);
 }
 
 static void ap_release_output(struct audio_policy *pol,
                               audio_io_handle_t output)
 {
-    ALOGW("%s", __FUNCTION__);
-    VENDOR_POLICY(pol)->release_output(VENDOR_POLICY(pol), output);
+    WRAPPED_CALL(pol, release_output, output);
 }
 
 static audio_io_handle_t ap_get_input(struct audio_policy *pol, audio_source_t inputSource,
@@ -166,50 +170,46 @@ static audio_io_handle_t ap_get_input(struct audio_policy *pol, audio_source_t i
                                       audio_channel_mask_t channelMask,
                                       audio_in_acoustics_t acoustics)
 {
-    ALOGW("%s", __FUNCTION__);
-    return VENDOR_POLICY(pol)->get_input(VENDOR_POLICY(pol), inputSource, sampling_rate, format, channelMask, acoustics);
+    RETURN_WRAPPED_CALL(pol, get_input, inputSource, sampling_rate, format, channelMask, acoustics);
 }
 
 static int ap_start_input(struct audio_policy *pol, audio_io_handle_t input)
 {
-    ALOGW("%s", __FUNCTION__);
-    return VENDOR_POLICY(pol)->start_input(VENDOR_POLICY(pol), input);
+    RETURN_WRAPPED_CALL(pol, start_input, input);
 }
 
 static int ap_stop_input(struct audio_policy *pol, audio_io_handle_t input)
 {
-    ALOGW("%s", __FUNCTION__);
-    return VENDOR_POLICY(pol)->stop_input(VENDOR_POLICY(pol), input);
+    RETURN_WRAPPED_CALL(pol, stop_input, input);
 }
 
 static void ap_release_input(struct audio_policy *pol, audio_io_handle_t input)
 {
-    ALOGW("%s", __FUNCTION__);
-    VENDOR_POLICY(pol)->release_input(VENDOR_POLICY(pol), input);
+    WRAPPED_CALL(pol, release_input, input);
 }
 
 static void ap_init_stream_volume(struct audio_policy *pol,
                                   audio_stream_type_t stream, int index_min,
                                   int index_max)
 {
-    ALOGW("%s: stream %d, index_min %d, index_max: %d", __FUNCTION__, stream, index_min, index_max);
-    VENDOR_POLICY(pol)->init_stream_volume(VENDOR_POLICY(pol), stream, index_min, index_max);
+    ALOGI("%s: stream %d, index_min %d, index_max: %d", __FUNCTION__, stream, index_min, index_max);
+    WRAPPED_CALL(pol, init_stream_volume, stream, index_min, index_max);
 }
 
 static int ap_set_stream_volume_index(struct audio_policy *pol,
                                       audio_stream_type_t stream,
                                       int index)
 {
-    ALOGW("%s: stream %d, index %d", __FUNCTION__, stream, index);
-    return VENDOR_POLICY(pol)->set_stream_volume_index(VENDOR_POLICY(pol), stream, index);
+    ALOGI("%s: stream %d, index %d", __FUNCTION__, stream, index);
+    RETURN_WRAPPED_CALL(pol, set_stream_volume_index, stream, index);
 }
 
 static int ap_get_stream_volume_index(const struct audio_policy *pol,
                                       audio_stream_type_t stream,
                                       int *index)
 {
-    int ret = VENDOR_POLICY(pol)->get_stream_volume_index(VENDOR_POLICY(pol), stream, index);
-    ALOGW("%s: stream %d, index %d", __FUNCTION__, stream, *index);
+    int ret = WRAPPED_POLICY(pol)->get_stream_volume_index(WRAPPED_POLICY(pol), stream, index);
+    ALOGI("%s: stream %d, index %d", __FUNCTION__, stream, *index);
     return ret;
 }
 
@@ -219,10 +219,14 @@ static int ap_set_stream_volume_index_for_device(struct audio_policy *pol,
                                       int index,
                                       audio_devices_t device)
 {
-    ALOGW("%s: stream %d, index %d, device: 0x%x", __FUNCTION__, stream, index, device);
+    ALOGI("%s: stream %d, index %d, device: 0x%x", __FUNCTION__, stream, index, device);
     device = convert_jb_to_ics(device);
-    //return VENDOR_POLICY(pol)->set_stream_volume_index_for_device(VENDOR_POLICY(pol), stream, index, device);
-    return VENDOR_POLICY(pol)->set_stream_volume_index(VENDOR_POLICY(pol), stream, index);
+    // This function does not exist for ICS audio HALs so the have to call the
+    // old function that doesn't differentiate between devices.
+    // TODO: Somehow track the current active devices and only allow to set
+    // volumes for those devices.
+    RETURN_WRAPPED_CALL(pol, set_stream_volume_index, stream, index);
+    //RETURN_WRAPPED_POLICY(pol, set_stream_volume_index_for_device, stream, index, device);
 }
 
 static int ap_get_stream_volume_index_for_device(const struct audio_policy *pol,
@@ -232,9 +236,9 @@ static int ap_get_stream_volume_index_for_device(const struct audio_policy *pol,
 {
     int ret;
     device = convert_jb_to_ics(device);
-    //ret = VENDOR_POLICY(pol)->get_stream_volume_index_for_device(VENDOR_POLICY(pol), stream, index, device);
-    ret = VENDOR_POLICY(pol)->get_stream_volume_index(VENDOR_POLICY(pol), stream, index);
-    ALOGW("%s: stream %d, index %d, device: 0x%x", __FUNCTION__, stream, *index, device);
+    ret = WRAPPED_POLICY(pol)->get_stream_volume_index(WRAPPED_POLICY(pol), stream, index);
+    //ret = WRAPPED_POLICY(pol)->get_stream_volume_index_for_device(WRAPPED_POLICY(pol), stream, index, device);
+    ALOGI("%s: stream %d, index %d, device: 0x%x", __FUNCTION__, stream, *index, device);
     return ret;
 }
 #endif
@@ -242,22 +246,22 @@ static int ap_get_stream_volume_index_for_device(const struct audio_policy *pol,
 static uint32_t ap_get_strategy_for_stream(const struct audio_policy *pol,
                                            audio_stream_type_t stream)
 {
-    ALOGW("%s", __FUNCTION__);
-    return VENDOR_POLICY(pol)->get_strategy_for_stream(VENDOR_POLICY(pol), stream);
+    RETURN_WRAPPED_CALL(pol, get_strategy_for_stream, stream);
 }
 
 static audio_devices_t ap_get_devices_for_stream(const struct audio_policy *pol,
                                           audio_stream_type_t stream)
 {
-    ALOGW("%s", __FUNCTION__);
-    return convert_ics_to_jb(VENDOR_POLICY(pol)->get_devices_for_stream(VENDOR_POLICY(pol), stream));
+    ALOGI("%s: stream_type: %d", __FUNCTION__, stream);
+    ics_audio_devices_t result;
+    result = WRAPPED_POLICY(pol)->get_devices_for_stream(WRAPPED_POLICY(pol), stream);
+    return convert_ics_to_jb(result);
 }
 
 static audio_io_handle_t ap_get_output_for_effect(struct audio_policy *pol,
                                             const struct effect_descriptor_s *desc)
 {
-    ALOGW("%s", __FUNCTION__);
-    return VENDOR_POLICY(pol)->get_output_for_effect(VENDOR_POLICY(pol), desc);
+    RETURN_WRAPPED_CALL(pol, get_output_for_effect, desc);
 }
 
 static int ap_register_effect(struct audio_policy *pol,
@@ -267,40 +271,43 @@ static int ap_register_effect(struct audio_policy *pol,
                               int session,
                               int id)
 {
-    ALOGW("%s", __FUNCTION__);
-    return VENDOR_POLICY(pol)->register_effect(VENDOR_POLICY(pol), desc, output, strategy, session, id);
+    RETURN_WRAPPED_CALL(pol, register_effect, desc, output, strategy, session, id);
 }
 
 static int ap_unregister_effect(struct audio_policy *pol, int id)
 {
-    ALOGW("%s", __FUNCTION__);
-    return VENDOR_POLICY(pol)->unregister_effect(VENDOR_POLICY(pol), id);
+    RETURN_WRAPPED_CALL(pol, unregister_effect, id);
 }
 
 static int ap_set_effect_enabled(struct audio_policy *pol, int id, bool enabled)
 {
-    ALOGW("%s", __FUNCTION__);
-    return VENDOR_POLICY(pol)->set_effect_enabled(VENDOR_POLICY(pol), id, enabled);
+    RETURN_WRAPPED_CALL(pol, set_effect_enabled, id, enabled);
 }
 
 static bool ap_is_stream_active(const struct audio_policy *pol, audio_stream_type_t stream,
                                 uint32_t in_past_ms)
 {
-    ALOGW("%s", __FUNCTION__);
-    return VENDOR_POLICY(pol)->is_stream_active(VENDOR_POLICY(pol), stream, in_past_ms);
+    RETURN_WRAPPED_CALL(pol, is_stream_active, stream, in_past_ms);
 }
 
+#ifndef ICS_AUDIO_BLOB
 static bool ap_is_stream_active_remotely(const struct audio_policy *pol, audio_stream_type_t stream,
-                                uint32_t in_past_ms)
+                                             uint32_t in_past_ms)
 {
-    ALOGW("%s", __FUNCTION__);
+    ALOGV("%s", __FUNCTION__);
+    // Don't warn about unused parameters
+    (void)(pol);
+    (void)(stream);
+    (void)(in_past_ms);
+    // No NULL check in AudioPolicyService.cpp for this function but we can
+    // just return 0.
     return 0;
 }
+#endif
 
 static int ap_dump(const struct audio_policy *pol, int fd)
 {
-    ALOGW("%s", __FUNCTION__);
-    return VENDOR_POLICY(pol)->dump(VENDOR_POLICY(pol), fd);
+    RETURN_WRAPPED_CALL(pol, dump, fd);
 }
 
 static int create_wrapper_ap(const struct audio_policy_device *device,
@@ -308,32 +315,44 @@ static int create_wrapper_ap(const struct audio_policy_device *device,
                              void *service,
                              struct audio_policy **ap)
 {
+    int ret = 0;
     struct wrapper_ap_device *dev;
     struct wrapper_audio_policy *dap;
     struct ics_audio_policy *iap;
 
     *ap = NULL;
 
-    if (!service || !aps_ops)
-        return -EINVAL;
-
-    dap = (struct wrapper_audio_policy *)malloc(sizeof(*dap));
-    if (!dap)
-        return -ENOMEM;
-
-    memset(dap, 0, sizeof(*dap));
-
-    wrap_aps(service, aps_ops, &dap->wrapped_aps);
-
+    if (!device || !service || !aps_ops) {
+        ret = -EINVAL;
+        goto fail_alloc;
+    }
 
     dev = (struct wrapper_ap_device *)device;
+    dap = (struct wrapper_audio_policy *)calloc(1, sizeof(*dap));
+    if (!dap) {
+        ret = -ENOMEM;
+        goto fail_alloc;
+    }
 
+    // Wrap audio_policy_service_ops
+    void * aps_wrapper;
+    struct audio_policy_service_ops *aps_wrapper_ops;
+    ret = aps_wrapper_create(service, aps_ops, (void **) &aps_wrapper,
+                             &aps_wrapper_ops);
+    if(ret) {
+        ALOGE("Failed to create audio policy service wrapper");
+        goto fail;
+    }
 
-    dev->vendor_device->create_audio_policy(dev->vendor_device,
-                                            &dap->wrapped_aps->wrapped_aps_ops,
-                                            dap->wrapped_aps, &iap);
+    dap->aps_wrapper = aps_wrapper;
+    ret = dev->wrapped_device->create_audio_policy(dev->wrapped_device, aps_wrapper_ops,
+                                                  aps_wrapper, &iap);
+    if(ret) {
+        ALOGE("Failed to create wrapped audio policy");
+        goto fail;
+    }
 
-    dap->vendor_policy = iap;
+    dap->wrapped_policy = iap;
 
     dap->policy.set_device_connection_state = ap_set_device_connection_state;
     dap->policy.get_device_connection_state = ap_get_device_connection_state;
@@ -366,39 +385,37 @@ static int create_wrapper_ap(const struct audio_policy_device *device,
     dap->policy.set_effect_enabled = ap_set_effect_enabled;
     dap->policy.is_stream_active = ap_is_stream_active;
 #ifndef ICS_AUDIO_BLOB
-     // No NULL check in AudioPolicyService.cpp
+    // No NULL check in AudioPolicyService.cpp
     dap->policy.is_stream_active_remotely = ap_is_stream_active_remotely;
     dap->policy.is_source_active = NULL;
 #endif
     dap->policy.dump = ap_dump;
 
-    dap->service = service;
-    dap->aps_ops = aps_ops;
-
     *ap = &dap->policy;
     return 0;
+
+fail:
+    free(dap);
+fail_alloc:
+    return ret;
 }
 
 static int destroy_wrapper_ap(const struct audio_policy_device *ap_dev,
                               struct audio_policy *ap)
 {
-    struct wrapper_ap_device *dev;
-    struct wrapper_audio_policy *policy;
+    struct wrapper_ap_device *dev = (struct wrapper_ap_device *)ap_dev;
+    struct wrapper_audio_policy *policy = (struct wrapper_audio_policy *)ap;
 
-    dev = (struct wrapper_ap_device *)ap_dev;
-    policy = (struct wrapper_audio_policy *)ap;
-
-    dev->vendor_device->destroy_audio_policy(dev->vendor_device,
-                                            policy->vendor_policy);
-    free(policy->wrapped_aps);
-
-    free(ap);
+    dev->wrapped_device->destroy_audio_policy(dev->wrapped_device,
+                                            policy->wrapped_policy);
+    aps_wrapper_destroy(policy->aps_wrapper);
+    free(policy);
     return 0;
 }
 
 static int wrapper_ap_dev_close(hw_device_t* device)
 {
-    VENDOR(device)->common.close((hw_device_t*)&(VENDOR(device)));
+    WRAPPED_DEVICE(device)->common.close((hw_device_t*)&(WRAPPED_DEVICE(device)));
     free(device);
     return 0;
 }
@@ -409,7 +426,7 @@ static int wrapper_ap_dev_open(const hw_module_t* module, const char* name,
     int ret = 0;
     struct wrapper_ap_device *dev;
 
-    ALOGW("Wrapping vendor audio policy");
+    ALOGI("Wrapping vendor audio policy");
 
     *device = NULL;
 
@@ -421,23 +438,19 @@ static int wrapper_ap_dev_open(const hw_module_t* module, const char* name,
         return -ENOMEM;
 
     /* TODO: Move vendor- prefix into function */
-    if (load_vendor_module("vendor-audio_policy", (const hw_module_t **) &gVendorModule)) {
+    if (load_vendor_module("vendor-audio_policy", (const hw_module_t **) &global_wrapped_module)) {
         ALOGE("Failed to load vendor module");
         free(dev);
         return -EINVAL;
     }
 
-    ALOGW("Wrapping vendor audio policy");
-
-    ret = gVendorModule->common.methods->open((const hw_module_t*)gVendorModule,
-                                             name, (hw_device_t**)&(dev->vendor_device));
+    ret = global_wrapped_module->common.methods->open((const hw_module_t*)global_wrapped_module,
+                                                      name, (hw_device_t**)&(dev->wrapped_device));
     if(ret) {
         ALOGE("vendor audio_policy open fail");
         free(dev);
         return ret;
     }
-
-    ALOGW("Wrapping vendor audio policy");
 
     dev->device.common.tag = HARDWARE_DEVICE_TAG;
     dev->device.common.version = 0;
@@ -446,11 +459,7 @@ static int wrapper_ap_dev_open(const hw_module_t* module, const char* name,
     dev->device.create_audio_policy = create_wrapper_ap;
     dev->device.destroy_audio_policy = destroy_wrapper_ap;
 
-    ALOGW("Wrapping vendor audio policy");
-
     *device = &dev->device.common;
-
-    ALOGW("Wrapping vendor audio policy");
 
     return 0;
 }

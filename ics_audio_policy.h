@@ -157,14 +157,6 @@ struct ics_audio_policy {
             audio_stream_type_t stream,
             uint32_t in_past_ms);
 
-#if false
-    bool (*is_stream_active_remotely)(const struct audio_policy *pol,
-            audio_stream_type_t stream,
-            uint32_t in_past_ms);
-
-    bool (*is_source_active)(const struct udio_policy *pol,
-            audio_source_t source);
-#endif
     /* dump state */
     int (*dump)(const struct ics_audio_policy *pol, int fd);
 };

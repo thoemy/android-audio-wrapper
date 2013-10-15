@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2013 Thomas Wendt <thoemy@gmx.net>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #define LOG_TAG "AudioWrapperCommon"
 // #define LOG_NDEBUG 0
 
@@ -7,7 +23,7 @@
 int load_vendor_module(const char * module_name, const hw_module_t ** vendor_module)
 {
     int rv = 0;
-    ALOGW("%s", __FUNCTION__);
+    ALOGI("%s", __FUNCTION__);
 
     if(*vendor_module)
         return 0;
@@ -51,10 +67,10 @@ audio_devices_t convert_ics_to_jb(ics_audio_devices_t ics_device) {
 
 
 #ifndef WRAPPER_CONVERT
-    ALOGW("%s (disabled): 0x%x -> 0x%x", __FUNCTION__, ics_device, device);
+    ALOGV("%s (disabled): 0x%x -> 0x%x", __FUNCTION__, ics_device, device);
     return ics_device;
 #else
-    ALOGW("%s: 0x%x -> 0x%x", __FUNCTION__, ics_device, device);
+    ALOGI("%s: 0x%x -> 0x%x", __FUNCTION__, ics_device, device);
     return device;
 #endif
 }
@@ -88,15 +104,15 @@ ics_audio_devices_t convert_jb_to_ics(audio_devices_t device) {
     }
 
 #ifndef WRAPPER_CONVERT
-    ALOGW("%s (disabled): 0x%x -> 0x%x", __FUNCTION__, device, ics_device);
+    ALOGV("%s (disabled): 0x%x -> 0x%x", __FUNCTION__, device, ics_device);
     return device;
 #else
-    ALOGW("%s: 0x%x -> 0x%x", __FUNCTION__, device, ics_device);
+    ALOGI("%s: 0x%x -> 0x%x", __FUNCTION__, device, ics_device);
     return ics_device;
 #endif
 }
 
-char * fixup_audio_parameters(const char *kv_pairs, bool jb_to_ics)
+char * fixup_audio_parameters(const char *kv_pairs, flags_conversion_mode_t mode)
 {
     int value;
     size_t len;
@@ -104,25 +120,34 @@ char * fixup_audio_parameters(const char *kv_pairs, bool jb_to_ics)
 
     android::AudioParameter param = android::AudioParameter(android::String8(kv_pairs));
     android::String8 key = android::String8(android::AudioParameter::keyRouting);
+
+    // TODO: There are more parameters that pass audio_devices_t values
     if (param.getInt(key, value) == android::NO_ERROR) {
-        ALOGW("%s: Fixing routing value (value: %u, jb_to_ics: %d)", __FUNCTION__,
-              value, jb_to_ics);
-        if(jb_to_ics) {
-            value = convert_jb_to_ics(value);
-        } else {
+        ALOGI("%s: Fixing routing value (value: %x, mode: %d)", __FUNCTION__,
+              value, mode);
+        switch(mode) {
+        case ICS_TO_JB:
             value = convert_ics_to_jb(value);
+            break;
+        case JB_TO_ICS:
+            value = convert_jb_to_ics(value);
+            break;
+        default:
+            ALOGE("%s: Invalid conversion mode %d", __FUNCTION__, mode);
         }
 
-        /* Adds value as a singed int that might be negative. Doesn't cause any
-         * problems because the bit representation is the same. */
+        // Adds value as a singed int that might be negative. Doesn't cause any
+        // problems because the bit representation is the same.
         param.addInt(key, value);
         
+        // When param is freed the string returned by param.toString() seems to
+        // be freed as well, so copy it.
         android::String8 fixed_kv_pairs = param.toString();
         len = fixed_kv_pairs.length();
         out = (char *) malloc(len + 1);
         strcpy(out, fixed_kv_pairs.string());
 
-        ALOGW("%s: fixed_kv_pairs: %s (%d)", __FUNCTION__, out, strlen(out));
+        ALOGI("%s: fixed_kv_pairs: %s (%d)", __FUNCTION__, out, strlen(out));
     } else {
         len = strlen(kv_pairs);
         out = (char *) malloc(len + 1);
