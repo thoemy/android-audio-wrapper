@@ -39,19 +39,31 @@ Known Issues
   used as the initial volume.
   See StreamState.applyAllVolumes in AudioService.java.
   Framework workaround for headset/speaker devices: http://review.cyanogenmod.org/#/c/33778/
+* The code in AudioFlinger::findSuitableHwDev_l that compares wanted devices
+  against the output of the wrapped get_supported_devices() function will not
+  properly work because the old audio_devices_t flags could represent input
+  and output devices independently. Now it's not possible anymore.
+  If that is confusing then look at the flags table below. For example how to
+  specify that only AUDIO_DEVICE_OUT_EARPIECE and AUDIO_DEVICE_IN_VOICE_CALL
+  is supported without implicitly supporting AUDIO_DEVICE_IN_COMMUNICATION
+  and AUDIO_DEVICE_OUT_BLUETOOTH_SCO_CARKIT.
+  get_supported_devices for the endeavoru ICS blob returns
+  0x8ff8607f_16 = 10001111111110000110000001111111_2 which seems weird anyway.
 
 
 Misc
 ----
 
-    $ adb logcat -s AudioPolicyServiceWrapper:D AudioWrapper:D AudioPolicyWrapper:D AudioWrapperCommon:D
+Catch interesing output:
+
+    $ adb logcat -s AudioFlinger:D AudioPolicyServiceWrapper:D AudioWrapper:D AudioPolicyWrapper:D AudioWrapperCommon:D
 
 
 Flags
 -----
 
 Bit Nr. Hex Value API <= 4.1                                API >= 4.2 output devices                  API >= 4.2 input devices
-------- --------- ----------------------------------------- ------------------------------------------ -------
+------- --------- ----------------------------------------- ------------------------------------------ ------------------------------------
 
 31	80000000 AUDIO_DEVICE_IN_DEFAULT                                                               AUDIO_DEVICE_BIT_IN
 30	40000000                                            AUDIO_DEVICE_BIT_DEFAULT                   AUDIO_DEVICE_BIT_DEFAULT

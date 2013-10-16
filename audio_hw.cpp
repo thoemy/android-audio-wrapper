@@ -378,7 +378,8 @@ static char * adev_get_parameters(const struct audio_hw_device *dev,
 
 static uint32_t adev_get_supported_devices(const struct audio_hw_device *dev)
 {
-    RETURN_WRAPPED_DEVICE_CALL(dev, get_supported_devices);
+    uint32_t devices = WRAPPED_DEVICE_CALL(dev, get_supported_devices);
+    return convert_audio_devices(devices, ICS_TO_JB);
 }
 
 static int adev_init_check(const struct audio_hw_device *dev)
