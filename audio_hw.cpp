@@ -54,7 +54,7 @@ struct wrapper_stream_in {
 })
 
 #define RETURN_WRAPPED_DEVICE_CALL(d, func, ...) ({\
-    ALOGI("%s", __FUNCTION__); \
+    ALOGV("%s", __FUNCTION__); \
     return WRAPPED_DEVICE(d)->func(WRAPPED_DEVICE(d), ##__VA_ARGS__); \
 })
 

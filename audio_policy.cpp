@@ -81,6 +81,7 @@ static int ap_set_device_connection_state(struct audio_policy *pol,
                                           audio_policy_dev_state_t state,
                                           const char *device_address)
 {
+    ALOGI("%s: device: 0x%x, state: %d, address: %s", __FUNCTION__, device, state, device_address);
     device = convert_audio_devices(device, JB_TO_ICS);
     RETURN_WRAPPED_CALL(pol, set_device_connection_state, device, state, device_address);
 }
@@ -90,6 +91,7 @@ static audio_policy_dev_state_t ap_get_device_connection_state(
                                             audio_devices_t device,
                                             const char *device_address)
 {
+    ALOGI("%s: device: 0x%x, address: %s", __FUNCTION__, device, device_address);
     device = convert_audio_devices(device, JB_TO_ICS);
     RETURN_WRAPPED_CALL(pol, get_device_connection_state, device, device_address);
 }

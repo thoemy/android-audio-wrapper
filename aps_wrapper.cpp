@@ -157,7 +157,7 @@ static int aps_move_effects(void *service, int session,
 static char * aps_get_parameters(void *service, audio_io_handle_t io_handle,
                                  const char *keys)
 {
-    ALOGI("%s: keys: %s", __FUNCTION__, keys);
+    ALOGI("%s: io_handle: %d, keys: %s", __FUNCTION__, io_handle, keys);
     aps_wrapper_service_t * waps = (aps_wrapper_service_t*) service;
     char * kv_pairs;
     char * fixed_kv_pairs;
@@ -172,7 +172,7 @@ static char * aps_get_parameters(void *service, audio_io_handle_t io_handle,
 static void aps_set_parameters(void *service, audio_io_handle_t io_handle,
                                const char *kv_pairs, int delay_ms)
 {
-    ALOGI("%s: kv_pairs: %s", __FUNCTION__, kv_pairs);
+    ALOGI("%s: io_handle: %d, kv_pairs: %s", __FUNCTION__, io_handle, kv_pairs);
     aps_wrapper_service_t * waps = (aps_wrapper_service_t*) service;
 
     char * fixed_kv_pairs = fixup_audio_parameters(kv_pairs, ICS_TO_JB);
