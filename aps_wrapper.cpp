@@ -57,9 +57,9 @@ static audio_io_handle_t aps_open_output(void *service,
 {
     ALOGI("%s: 0x%x, %d, %d, %x, %d, %x", __FUNCTION__, *pDevices, *pSamplingRate,
           *pFormat, *pChannelMask, *pLatencyMs, flags);
-    audio_devices_t devices = convert_ics_to_jb(*pDevices);
+    audio_devices_t devices = convert_audio_devices(*pDevices, ICS_TO_JB);
 
-    // The old NVIDIA policy manager doesn't set the PRIMARY flag for the
+    // The old policy managers don't set the PRIMARY flag for the
     // first output it opens but AudioFlinger needs at least one device with
     // that flag.
     // TODO: Should probably only be done for the first device opened.
@@ -81,7 +81,7 @@ static audio_io_handle_t aps_open_output_on_module(void *service,
 {
     ALOGI("%s: 0x%x, %d, %d, %x, %d, %x", __FUNCTION__, *pDevices, *pSamplingRate,
           *pFormat, *pChannelMask, *pLatencyMs, flags);
-    audio_devices_t devices = convert_ics_to_jb(*pDevices);
+    audio_devices_t devices = convert_audio_devices(*pDevices, ICS_TO_JB);
     WRAPPED_CALL(service, open_output_on_module, module, &devices, pSamplingRate,
                  pFormat, pChannelMask, pLatencyMs, flags);
 }
@@ -118,7 +118,7 @@ static audio_io_handle_t aps_open_input(void *service,
 {
     ALOGI("%s: 0x%x, %d, %d, %x, %d", __FUNCTION__, *pDevices, *pSamplingRate,
           *pFormat, *pChannelMask, acoustics);
-    audio_devices_t devices = convert_ics_to_jb(*pDevices);
+    audio_devices_t devices = convert_audio_devices(*pDevices, ICS_TO_JB);
     WRAPPED_CALL(service, open_input, &devices, pSamplingRate, pFormat,
                  pChannelMask, acoustics);
 }
@@ -131,7 +131,7 @@ static audio_io_handle_t aps_open_input_on_module(void *service,
                                                   audio_channel_mask_t *pChannelMask)
 {
     ALOGI("%s: 0x%x, %d, %d, %x", __FUNCTION__, *pDevices, *pSamplingRate, *pFormat, *pChannelMask);
-    audio_devices_t devices = convert_ics_to_jb(*pDevices);
+    audio_devices_t devices = convert_audio_devices(*pDevices, ICS_TO_JB);
     WRAPPED_CALL(service, open_input_on_module, module, &devices, pSamplingRate, pFormat,
                  pChannelMask);
 }

@@ -56,82 +56,89 @@ int load_vendor_module(const hw_module_t* wrapper_module, const char* name,
     return ret;
 }
 
-audio_devices_t convert_ics_to_jb(ics_audio_devices_t ics_device) {
-
+#ifdef CONVERT_AUDIO_DEVICES_T
+static audio_devices_t convert_ics_to_jb(const ics_audio_devices_t ics_device)
+ {
     audio_devices_t device = 0;
 
     if((ics_device & ~ICS_AUDIO_DEVICE_OUT_ALL) == 0) {
-        /* The first 15 AUDIO_DEVICE_OUT bits are equal. Exception is
-         * ICS_AUDIO_DEVICE_OUT_DEFAULT / AUDIO_DEVICE_OUT_REMOTE_SUBMIX.
-         */
+        // The first 15 AUDIO_DEVICE_OUT bits are equal. Exception is
+        // ICS_AUDIO_DEVICE_OUT_DEFAULT / AUDIO_DEVICE_OUT_REMOTE_SUBMIX.
         device = ics_device & ~ICS_AUDIO_DEVICE_OUT_DEFAULT;
 
-        /* Set the correct DEFAULT bit */
+        // Set the correct DEFAULT bit
         if(ics_device & ICS_AUDIO_DEVICE_OUT_DEFAULT) {
             device |= AUDIO_DEVICE_OUT_DEFAULT;
         }
     } else if((ics_device & ~ICS_AUDIO_DEVICE_IN_ALL) == 0) {
-        /* Bits needs to be shifted 16 bits to the right and the IN bit must be
-         * set.
-         */
+        // Bits needs to be shifted 16 bits to the right and the IN bit must be
+        // set.
         device = ((ics_device & ~ICS_AUDIO_DEVICE_IN_DEFAULT) >> 16) | AUDIO_DEVICE_BIT_IN;
 
-        /* Set the correct DEFAULT bit */
+        // Set the correct DEFAULT bit
         if((ics_device & ICS_AUDIO_DEVICE_IN_DEFAULT) == ICS_AUDIO_DEVICE_IN_DEFAULT) {
             device |= AUDIO_DEVICE_IN_DEFAULT;
         }
     } else {
-        /* I guess we should never land here */
-        ALOGW("ics_audio_devices_t is neither input nor output: 0x%x", ics_device);
+        // ics_device has bits for input and output devices set and cannot be
+        // properly converted to a JB 4.2 representation.
+        ALOGW("%s: 0x%x has no proper representation", __FUNCTION__, ics_device);
         device = ics_device;
     }
 
-
-#ifndef WRAPPER_CONVERT
-    ALOGV("%s (disabled): 0x%x -> 0x%x", __FUNCTION__, ics_device, device);
-    return ics_device;
-#else
-    ALOGI("%s: 0x%x -> 0x%x", __FUNCTION__, ics_device, device);
     return device;
-#endif
 }
 
 #define DEVICE_OUT_MASK 0x3FFF
 #define DEVICE_IN_MASK 0xFF
 
-ics_audio_devices_t convert_jb_to_ics(audio_devices_t device) {
-
+static ics_audio_devices_t convert_jb_to_ics(const audio_devices_t device)
+ {
     ics_audio_devices_t ics_device = 0;
 
     if(audio_is_output_devices(device)) {
-        /* We care only about the first 15 bits since the others cannot be
-         * mapped to the old enum.
-         */
+        // We care only about the first 15 bits since the others cannot be
+        // mapped to the old enum.
         ics_device = (device & DEVICE_OUT_MASK);
-        /* Set the correct DEFAULT bit */
+        // Set the correct DEFAULT bit
         if(device & AUDIO_DEVICE_OUT_DEFAULT)
             ics_device |= ICS_AUDIO_DEVICE_OUT_DEFAULT;
     } else if((device & AUDIO_DEVICE_BIT_IN) == AUDIO_DEVICE_BIT_IN) {
-        /* We care only about the first 8 bits since the other cannot be
-         * mapped to the old enum.
-         */
+        // We care only about the first 8 bits since the other cannot be
+        // mapped to the old enum.
         ics_device = (device & DEVICE_IN_MASK) << 16;
         if((device & AUDIO_DEVICE_IN_DEFAULT) == AUDIO_DEVICE_IN_DEFAULT)
             ics_device |= ICS_AUDIO_DEVICE_IN_DEFAULT;
     } else {
-        /* I guess we should never land here */
-        ALOGW("audio_devices_t is neither input nor output: 0x%x", device);
+        // I guess we should never land here
+        ALOGW("%s: audio_devices_t is neither input nor output: 0x%x",
+              __FUNCTION__, device);
         ics_device = device;
     }
 
-#ifndef WRAPPER_CONVERT
-    ALOGV("%s (disabled): 0x%x -> 0x%x", __FUNCTION__, device, ics_device);
-    return device;
-#else
-    ALOGI("%s: 0x%x -> 0x%x", __FUNCTION__, device, ics_device);
     return ics_device;
-#endif
 }
+
+uint32_t convert_audio_devices(uint32_t devices, flags_conversion_mode_t mode)
+{
+    uint32_t ret;
+    switch(mode) {
+    case ICS_TO_JB:
+        ret = convert_ics_to_jb(devices);
+        ALOGI("%s: ICS_TO_JB (0x%x -> 0x%x)", __FUNCTION__, devices, ret);
+        break;
+    case JB_TO_ICS:
+        ret = convert_jb_to_ics(devices);
+        ALOGI("%s: JB_TO_ICS (0x%x -> 0x%x)", __FUNCTION__, devices, ret);
+        break;
+    default:
+        ALOGE("%s: Invalid conversion mode %d", __FUNCTION__, mode);
+        ret = devices;
+    }
+
+    return devices;
+}
+#endif
 
 char * fixup_audio_parameters(const char *kv_pairs, flags_conversion_mode_t mode)
 {
@@ -146,16 +153,7 @@ char * fixup_audio_parameters(const char *kv_pairs, flags_conversion_mode_t mode
     if (param.getInt(key, value) == android::NO_ERROR) {
         ALOGI("%s: Fixing routing value (value: %x, mode: %d)", __FUNCTION__,
               value, mode);
-        switch(mode) {
-        case ICS_TO_JB:
-            value = convert_ics_to_jb(value);
-            break;
-        case JB_TO_ICS:
-            value = convert_jb_to_ics(value);
-            break;
-        default:
-            ALOGE("%s: Invalid conversion mode %d", __FUNCTION__, mode);
-        }
+        value = convert_audio_devices(value, mode);
 
         // Adds value as a singed int that might be negative. Doesn't cause any
         // problems because the bit representation is the same.

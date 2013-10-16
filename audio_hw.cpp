@@ -307,7 +307,7 @@ static int adev_open_output_stream(struct audio_hw_device *dev,
         return -ENOMEM;
 
 
-    devices = convert_jb_to_ics(devices);
+    devices = convert_audio_devices(devices, JB_TO_ICS);
 
 #ifdef ICS_AUDIO_BLOB
     ret = WRAPPED_DEVICE_CALL(dev, open_output_stream, devices, format, channels, sample_rate,
@@ -477,7 +477,7 @@ static int adev_open_input_stream(struct audio_hw_device *dev, uint32_t devices,
     if (!in)
         return -ENOMEM;
 
-    devices = convert_jb_to_ics(devices);
+    devices = convert_audio_devices(devices, JB_TO_ICS);
 
 #ifndef ICS_AUDIO_BLOB
     ret = WRAPPED_DEVICE_CALL(dev, open_input_stream, devices, (int *)&config->format,
