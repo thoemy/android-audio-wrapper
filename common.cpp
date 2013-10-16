@@ -119,7 +119,7 @@ static ics_audio_devices_t convert_jb_to_ics(const audio_devices_t device)
     return ics_device;
 }
 
-uint32_t convert_audio_devices(uint32_t devices, flags_conversion_mode_t mode)
+uint32_t convert_audio_devices(const uint32_t devices, flags_conversion_mode_t mode)
 {
     uint32_t ret;
     switch(mode) {
@@ -136,7 +136,7 @@ uint32_t convert_audio_devices(uint32_t devices, flags_conversion_mode_t mode)
         ret = devices;
     }
 
-    return devices;
+    return ret;
 }
 #endif
 
