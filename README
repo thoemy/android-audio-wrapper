@@ -10,7 +10,7 @@ the framework (ICS_AUDIO_BLOB / MR0_AUDIO_BLOB) or wrap the audio HALs.
 The wrapper does the following things:
    * wraps audio_policy and audio.primary HALs
    * wraps audio_policy_service_ops
-   * converts the audio_devices_t enum between the ICS and JB format
+   * converts audio_devices_t enum between API <=4.1 and >= 4.2
 
 Only tested on endeavoru CM 10.2 nightlies.
 

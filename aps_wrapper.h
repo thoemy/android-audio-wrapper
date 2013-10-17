@@ -20,10 +20,13 @@
 #include <system/audio_policy.h>
 #include <hardware/audio_policy.h>
 
+#include "include/4.0/hardware/audio_policy.h"
+
 struct aps_wrapper_service;
 typedef struct aps_wrapper_service aps_wrapper_service_t;
 
 int aps_wrapper_create(void *service, struct audio_policy_service_ops * aps_ops,
-                       void ** wrapper_service, struct audio_policy_service_ops ** wrapped_aps_ops);
+                       void ** wrapper_service,
+                       struct wrapper::audio_policy_service_ops ** wrapped_aps_ops);
 
 void aps_wrapper_destroy(void * wrapper_service);

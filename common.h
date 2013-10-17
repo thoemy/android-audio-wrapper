@@ -20,7 +20,15 @@
 #include <media/AudioParameter.h>
 #include <hardware/audio.h>
 #include <hardware/hardware.h>
-#include <system/audio.h>
+
+#include "include/4.0/system/audio.h"
+
+
+#define ANDROID_VERSION(maj, min) \
+    (maj * 10 + min)
+
+#define WRAPPED_AUDIO_POLICY_VERSION ANDROID_VERSION(4, 0)
+#define WRAPPED_AUDIO_HAL_VERSION ANDROID_VERSION(4, 0)
 
 enum flags_conversion_mode {
     ICS_TO_JB,
@@ -31,74 +39,6 @@ typedef enum flags_conversion_mode flags_conversion_mode_t;
 int load_vendor_module(const hw_module_t* wrapper_module, const char* name,
                        hw_device_t** device, const char* inst);
 char* fixup_audio_parameters(const char* kv_pairs, flags_conversion_mode_t mode);
-
-enum {
-    /* output devices */
-    ICS_AUDIO_DEVICE_OUT_EARPIECE                  = 0x1,
-    ICS_AUDIO_DEVICE_OUT_SPEAKER                   = 0x2,
-    ICS_AUDIO_DEVICE_OUT_WIRED_HEADSET             = 0x4,
-    ICS_AUDIO_DEVICE_OUT_WIRED_HEADPHONE           = 0x8,
-    ICS_AUDIO_DEVICE_OUT_BLUETOOTH_SCO             = 0x10,
-    ICS_AUDIO_DEVICE_OUT_BLUETOOTH_SCO_HEADSET     = 0x20,
-    ICS_AUDIO_DEVICE_OUT_BLUETOOTH_SCO_CARKIT      = 0x40,
-    ICS_AUDIO_DEVICE_OUT_BLUETOOTH_A2DP            = 0x80,
-    ICS_AUDIO_DEVICE_OUT_BLUETOOTH_A2DP_HEADPHONES = 0x100,
-    ICS_AUDIO_DEVICE_OUT_BLUETOOTH_A2DP_SPEAKER    = 0x200,
-    ICS_AUDIO_DEVICE_OUT_AUX_DIGITAL               = 0x400,
-    ICS_AUDIO_DEVICE_OUT_ANLG_DOCK_HEADSET         = 0x800,
-    ICS_AUDIO_DEVICE_OUT_DGTL_DOCK_HEADSET         = 0x1000,
-    ICS_AUDIO_DEVICE_OUT_USB_ACCESSORY             = 0x2000,
-    ICS_AUDIO_DEVICE_OUT_USB_DEVICE                = 0x4000,
-    ICS_AUDIO_DEVICE_OUT_DEFAULT                   = 0x8000,
-    ICS_AUDIO_DEVICE_OUT_ALL      = (ICS_AUDIO_DEVICE_OUT_EARPIECE |
-                                 ICS_AUDIO_DEVICE_OUT_SPEAKER |
-                                 ICS_AUDIO_DEVICE_OUT_WIRED_HEADSET |
-                                 ICS_AUDIO_DEVICE_OUT_WIRED_HEADPHONE |
-                                 ICS_AUDIO_DEVICE_OUT_BLUETOOTH_SCO |
-                                 ICS_AUDIO_DEVICE_OUT_BLUETOOTH_SCO_HEADSET |
-                                 ICS_AUDIO_DEVICE_OUT_BLUETOOTH_SCO_CARKIT |
-                                 ICS_AUDIO_DEVICE_OUT_BLUETOOTH_A2DP |
-                                 ICS_AUDIO_DEVICE_OUT_BLUETOOTH_A2DP_HEADPHONES |
-                                 ICS_AUDIO_DEVICE_OUT_BLUETOOTH_A2DP_SPEAKER |
-                                 ICS_AUDIO_DEVICE_OUT_AUX_DIGITAL |
-                                 ICS_AUDIO_DEVICE_OUT_ANLG_DOCK_HEADSET |
-                                 ICS_AUDIO_DEVICE_OUT_DGTL_DOCK_HEADSET |
-                                 ICS_AUDIO_DEVICE_OUT_USB_ACCESSORY |
-                                 ICS_AUDIO_DEVICE_OUT_USB_DEVICE |
-                                 ICS_AUDIO_DEVICE_OUT_DEFAULT),
-    ICS_AUDIO_DEVICE_OUT_ALL_A2DP = (ICS_AUDIO_DEVICE_OUT_BLUETOOTH_A2DP |
-                                 ICS_AUDIO_DEVICE_OUT_BLUETOOTH_A2DP_HEADPHONES |
-                                 ICS_AUDIO_DEVICE_OUT_BLUETOOTH_A2DP_SPEAKER),
-    ICS_AUDIO_DEVICE_OUT_ALL_SCO  = (ICS_AUDIO_DEVICE_OUT_BLUETOOTH_SCO |
-                                 ICS_AUDIO_DEVICE_OUT_BLUETOOTH_SCO_HEADSET |
-                                 ICS_AUDIO_DEVICE_OUT_BLUETOOTH_SCO_CARKIT),
-    ICS_AUDIO_DEVICE_OUT_ALL_USB  = (ICS_AUDIO_DEVICE_OUT_USB_ACCESSORY |
-                                 ICS_AUDIO_DEVICE_OUT_USB_DEVICE),
-
-    /* input devices */
-    ICS_AUDIO_DEVICE_IN_COMMUNICATION         = 0x10000,
-    ICS_AUDIO_DEVICE_IN_AMBIENT               = 0x20000,
-    ICS_AUDIO_DEVICE_IN_BUILTIN_MIC           = 0x40000,
-    ICS_AUDIO_DEVICE_IN_BLUETOOTH_SCO_HEADSET = 0x80000,
-    ICS_AUDIO_DEVICE_IN_WIRED_HEADSET         = 0x100000,
-    ICS_AUDIO_DEVICE_IN_AUX_DIGITAL           = 0x200000,
-    ICS_AUDIO_DEVICE_IN_VOICE_CALL            = 0x400000,
-    ICS_AUDIO_DEVICE_IN_BACK_MIC              = 0x800000,
-    ICS_AUDIO_DEVICE_IN_DEFAULT               = 0x80000000,
-
-    ICS_AUDIO_DEVICE_IN_ALL     = (ICS_AUDIO_DEVICE_IN_COMMUNICATION |
-                               ICS_AUDIO_DEVICE_IN_AMBIENT |
-                               ICS_AUDIO_DEVICE_IN_BUILTIN_MIC |
-                               ICS_AUDIO_DEVICE_IN_BLUETOOTH_SCO_HEADSET |
-                               ICS_AUDIO_DEVICE_IN_WIRED_HEADSET |
-                               ICS_AUDIO_DEVICE_IN_AUX_DIGITAL |
-                               ICS_AUDIO_DEVICE_IN_VOICE_CALL |
-                               ICS_AUDIO_DEVICE_IN_BACK_MIC |
-                               ICS_AUDIO_DEVICE_IN_DEFAULT),
-    ICS_AUDIO_DEVICE_IN_ALL_SCO = ICS_AUDIO_DEVICE_IN_BLUETOOTH_SCO_HEADSET,
-};
-
-typedef uint32_t ics_audio_devices_t;
 
 uint32_t convert_audio_devices(uint32_t devices, flags_conversion_mode_t mode);
 

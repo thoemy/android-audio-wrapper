@@ -57,80 +57,80 @@ int load_vendor_module(const hw_module_t* wrapper_module, const char* name,
 }
 
 #ifdef CONVERT_AUDIO_DEVICES_T
-static audio_devices_t convert_ics_to_jb(const ics_audio_devices_t ics_device)
+static audio_devices_t convert_ics_to_jb(const wrapper::audio_devices_t wrapped_devices)
 {
-    audio_devices_t device = 0;
+    audio_devices_t devices = 0;
 
-    if((ics_device & ~ICS_AUDIO_DEVICE_OUT_ALL) == 0) {
+    if((wrapped_devices & ~wrapper::AUDIO_DEVICE_OUT_ALL) == 0) {
         // The first 15 AUDIO_DEVICE_OUT bits are equal. Exception is
-        // ICS_AUDIO_DEVICE_OUT_DEFAULT / AUDIO_DEVICE_OUT_REMOTE_SUBMIX.
-        device = ics_device & ~ICS_AUDIO_DEVICE_OUT_DEFAULT;
+        // wrapper::AUDIO_DEVICE_OUT_DEFAULT / AUDIO_DEVICE_OUT_REMOTE_SUBMIX.
+        devices = wrapped_devices & ~wrapper::AUDIO_DEVICE_OUT_DEFAULT;
 
         // Set the correct DEFAULT bit
-        if(ics_device & ICS_AUDIO_DEVICE_OUT_DEFAULT) {
-            device |= AUDIO_DEVICE_OUT_DEFAULT;
+        if(wrapped_devices & wrapper::AUDIO_DEVICE_OUT_DEFAULT) {
+            devices |= AUDIO_DEVICE_OUT_DEFAULT;
         }
-    } else if((ics_device & ~ICS_AUDIO_DEVICE_IN_ALL) == 0) {
+    } else if((wrapped_devices & ~wrapper::AUDIO_DEVICE_IN_ALL) == 0) {
         // Bits needs to be shifted 16 bits to the right and the IN bit must be
         // set.
-        device = ((ics_device & ~ICS_AUDIO_DEVICE_IN_DEFAULT) >> 16) | AUDIO_DEVICE_BIT_IN;
+        devices = ((wrapped_devices & ~wrapper::AUDIO_DEVICE_IN_DEFAULT) >> 16) | AUDIO_DEVICE_BIT_IN;
 
         // Set the correct DEFAULT bit
-        if((ics_device & ICS_AUDIO_DEVICE_IN_DEFAULT) == ICS_AUDIO_DEVICE_IN_DEFAULT) {
-            device |= AUDIO_DEVICE_IN_DEFAULT;
+        if((wrapped_devices & wrapper::AUDIO_DEVICE_IN_DEFAULT) == wrapper::AUDIO_DEVICE_IN_DEFAULT) {
+            devices |= AUDIO_DEVICE_IN_DEFAULT;
         }
     } else {
-        // ics_device has bits for input and output devices set and cannot be
+        // wrapped_devices has bits for input and output devices set and cannot be
         // properly converted to a JB 4.2 representation.
-        ALOGW("%s: 0x%x has no proper representation", __FUNCTION__, ics_device);
-        device = ics_device;
+        ALOGW("%s: 0x%x has no proper representation", __FUNCTION__, wrapped_devices);
+        devices = wrapped_devices;
     }
 
-    return device;
+    return devices;
 }
 
 #define DEVICE_OUT_MASK 0x3FFF
 #define DEVICE_IN_MASK 0xFF
 
-static ics_audio_devices_t convert_jb_to_ics(const audio_devices_t device)
+static wrapper::audio_devices_t convert_jb_to_ics(const audio_devices_t devices)
 {
-    ics_audio_devices_t ics_device = 0;
+    wrapper::audio_devices_t wrapped_devices;
 
-    if(audio_is_output_devices(device)) {
+    if(audio_is_output_devices(devices)) {
         // We care only about the first 15 bits since the others cannot be
         // mapped to the old enum.
-        ics_device = (device & DEVICE_OUT_MASK);
+        wrapped_devices = (devices & DEVICE_OUT_MASK);
         // Set the correct DEFAULT bit
-        if(device & AUDIO_DEVICE_OUT_DEFAULT)
-            ics_device |= ICS_AUDIO_DEVICE_OUT_DEFAULT;
-    } else if((device & AUDIO_DEVICE_BIT_IN) == AUDIO_DEVICE_BIT_IN) {
+        if(devices & AUDIO_DEVICE_OUT_DEFAULT)
+            wrapped_devices |= wrapper::AUDIO_DEVICE_OUT_DEFAULT;
+    } else if((devices & AUDIO_DEVICE_BIT_IN) == AUDIO_DEVICE_BIT_IN) {
         // We care only about the first 8 bits since the other cannot be
         // mapped to the old enum.
-        ics_device = (device & DEVICE_IN_MASK) << 16;
-        if((device & AUDIO_DEVICE_IN_DEFAULT) == AUDIO_DEVICE_IN_DEFAULT)
-            ics_device |= ICS_AUDIO_DEVICE_IN_DEFAULT;
+        wrapped_devices = (devices & DEVICE_IN_MASK) << 16;
+        if((devices & AUDIO_DEVICE_IN_DEFAULT) == AUDIO_DEVICE_IN_DEFAULT)
+            wrapped_devices |= wrapper::AUDIO_DEVICE_IN_DEFAULT;
     } else {
         // I guess we should never land here
         ALOGW("%s: audio_devices_t is neither input nor output: 0x%x",
-              __FUNCTION__, device);
-        ics_device = device;
+              __FUNCTION__, devices);
+        wrapped_devices = devices;
     }
 
-    return ics_device;
+    return wrapped_devices;
 }
 #endif
 
-static ics_audio_devices_t fixup_audio_devices(ics_audio_devices_t device)
+static wrapper::audio_devices_t fixup_audio_devices(wrapper::audio_devices_t device)
 {
 #ifdef NO_HTC_POLICY_MANAGER
     // audio_policy.default wants to open BUILTIN_MIC for some input source
     // which results in silence. The HTC audio_policy uses VOICE_CALL
     // instead. Also the BUILTIN_MIC bit of get_supported_devices() is not
     // set. So this seems the correct thing to do.
-    if((device & ICS_AUDIO_DEVICE_IN_BUILTIN_MIC) == ICS_AUDIO_DEVICE_IN_BUILTIN_MIC) {
+    if((device & wrapper::AUDIO_DEVICE_IN_BUILTIN_MIC) == wrapper::AUDIO_DEVICE_IN_BUILTIN_MIC) {
         ALOGI("%s: BUILTIN_MIC set, setting VOICE_CALL instead", __FUNCTION__);
-        device &= ~ICS_AUDIO_DEVICE_IN_BUILTIN_MIC;
-        device |= ICS_AUDIO_DEVICE_IN_VOICE_CALL;
+        device &= ~wrapper::AUDIO_DEVICE_IN_BUILTIN_MIC;
+        device |= wrapper::AUDIO_DEVICE_IN_VOICE_CALL;
     }
 #endif
     return device;

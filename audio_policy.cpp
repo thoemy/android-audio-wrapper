@@ -30,7 +30,8 @@
 #include <system/audio_policy.h>
 #include <hardware/audio_policy.h>
 
-#include "ics_audio_policy.h"
+#include "include/4.0/system/audio.h"
+#include "include/4.0/hardware/audio_policy.h"
 #include "aps_wrapper.h"
 #include "common.h"
 
@@ -40,12 +41,12 @@ struct wrapper_ap_module {
 
 struct wrapper_ap_device {
     struct audio_policy_device device;
-    struct ics_audio_policy_device *wrapped_device;
+    struct wrapper::audio_policy_device *wrapped_device;
 };
 
 struct wrapper_audio_policy {
     struct audio_policy policy;
-    struct ics_audio_policy *wrapped_policy;
+    struct wrapper::audio_policy *wrapped_policy;
     void * aps_wrapper;
 };
 
@@ -81,9 +82,11 @@ static int ap_set_device_connection_state(struct audio_policy *pol,
                                           audio_policy_dev_state_t state,
                                           const char *device_address)
 {
-    ALOGI("%s: device: 0x%x, state: %d, address: %s", __FUNCTION__, device, state, device_address);
+    ALOGI("%s: device: 0x%x, state: %d, address: %s", __FUNCTION__, device, state,
+          device_address);
     device = convert_audio_devices(device, JB_TO_ICS);
-    RETURN_WRAPPED_CALL(pol, set_device_connection_state, device, state, device_address);
+    RETURN_WRAPPED_CALL(pol, set_device_connection_state, (wrapper::audio_devices_t) device,
+                        state, device_address);
 }
 
 static audio_policy_dev_state_t ap_get_device_connection_state(
@@ -93,7 +96,8 @@ static audio_policy_dev_state_t ap_get_device_connection_state(
 {
     ALOGI("%s: device: 0x%x, address: %s", __FUNCTION__, device, device_address);
     device = convert_audio_devices(device, JB_TO_ICS);
-    RETURN_WRAPPED_CALL(pol, get_device_connection_state, device, device_address);
+    RETURN_WRAPPED_CALL(pol, get_device_connection_state, (wrapper::audio_devices_t) device,
+                        device_address);
 }
 
 static void ap_set_phone_state(struct audio_policy *pol, audio_mode_t state)
@@ -253,7 +257,7 @@ static audio_devices_t ap_get_devices_for_stream(const struct audio_policy *pol,
                                           audio_stream_type_t stream)
 {
     ALOGI("%s: stream_type: %d", __FUNCTION__, stream);
-    ics_audio_devices_t result;
+    wrapper::audio_devices_t result;
     result = WRAPPED_POLICY(pol)->get_devices_for_stream(WRAPPED_POLICY(pol), stream);
     return convert_audio_devices(result, ICS_TO_JB);
 }
@@ -318,7 +322,7 @@ static int create_wrapper_ap(const struct audio_policy_device *device,
     int ret = 0;
     struct wrapper_ap_device *dev;
     struct wrapper_audio_policy *dap;
-    struct ics_audio_policy *iap;
+    struct wrapper::audio_policy *iap;
 
     *ap = NULL;
 
@@ -336,7 +340,7 @@ static int create_wrapper_ap(const struct audio_policy_device *device,
 
     // Wrap audio_policy_service_ops
     void * aps_wrapper;
-    struct audio_policy_service_ops *aps_wrapper_ops;
+    struct wrapper::audio_policy_service_ops *aps_wrapper_ops;
     ret = aps_wrapper_create(service, aps_ops, (void **) &aps_wrapper,
                              &aps_wrapper_ops);
     if(ret) {

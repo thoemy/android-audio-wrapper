@@ -23,11 +23,10 @@
 #include "aps_wrapper.h"
 #include "common.h"
 
-
 struct aps_wrapper_service {
     void * wrapped_service;
     struct audio_policy_service_ops * wrapped_aps_ops;
-    struct audio_policy_service_ops aps_ops;
+    struct wrapper::audio_policy_service_ops aps_ops;
 };
 
 /**
@@ -39,12 +38,13 @@ struct aps_wrapper_service {
     return __wrapped_aps->wrapped_aps_ops->func(__wrapped_aps->wrapped_service, ##__VA_ARGS__); \
 })
 
-
+#if WRAPPED_AUDIO_POLICY_VERSION >= ANDROID_VERSION(4, 1)
 static audio_module_handle_t aps_load_hw_module(void *service,
                                              const char *name)
 {
     WRAPPED_CALL(service, load_hw_module, name);
 }
+#endif
 
 // deprecated: replaced by aps_open_output_on_module()
 static audio_io_handle_t aps_open_output(void *service,
@@ -70,6 +70,7 @@ static audio_io_handle_t aps_open_output(void *service,
                  pChannelMask, pLatencyMs, flags);
 }
 
+#if WRAPPED_AUDIO_POLICY_VERSION >= ANDROID_VERSION(4, 1)
 static audio_io_handle_t aps_open_output_on_module(void *service,
                                                    audio_module_handle_t module,
                                                    audio_devices_t *pDevices,
@@ -85,6 +86,7 @@ static audio_io_handle_t aps_open_output_on_module(void *service,
     WRAPPED_CALL(service, open_output_on_module, module, &devices, pSamplingRate,
                  pFormat, pChannelMask, pLatencyMs, flags);
 }
+#endif
 
 static audio_io_handle_t aps_open_dup_output(void *service,
                                              audio_io_handle_t output1,
@@ -123,6 +125,7 @@ static audio_io_handle_t aps_open_input(void *service,
                  pChannelMask, acoustics);
 }
 
+#if WRAPPED_AUDIO_POLICY_VERSION >= ANDROID_VERSION(4, 1)
 static audio_io_handle_t aps_open_input_on_module(void *service,
                                                   audio_module_handle_t module,
                                                   audio_devices_t *pDevices,
@@ -135,6 +138,7 @@ static audio_io_handle_t aps_open_input_on_module(void *service,
     WRAPPED_CALL(service, open_input_on_module, module, &devices, pSamplingRate, pFormat,
                  pChannelMask);
 }
+#endif
 
 static int aps_close_input(void *service, audio_io_handle_t input)
 {
@@ -211,10 +215,10 @@ static int aps_set_voice_volume(void *service, float volume, int delay_ms)
 /**
  * Wraps a service and the corresponding service ops with our mock service.
  */
-int aps_wrapper_create(void *service,
-                       struct audio_policy_service_ops * aps_ops,
-                       void ** wrapped_service,
-                       struct audio_policy_service_ops ** wrapped_aps_ops)
+int aps_wrapper_create(void *wrapped_service,
+                       struct audio_policy_service_ops * wrapped_aps_ops,
+                       void ** service,
+                       struct wrapper::audio_policy_service_ops ** aps_ops)
 {
     aps_wrapper_service_t * waps;
 
@@ -222,8 +226,8 @@ int aps_wrapper_create(void *service,
     if(!waps)
         return -ENOMEM;
 
-    waps->wrapped_service = service;
-    waps->wrapped_aps_ops = aps_ops;
+    waps->wrapped_service = wrapped_service;
+    waps->wrapped_aps_ops = wrapped_aps_ops;
 
     waps->aps_ops.open_output = aps_open_output;
     waps->aps_ops.open_duplicate_output = aps_open_dup_output;
@@ -240,12 +244,14 @@ int aps_wrapper_create(void *service,
     waps->aps_ops.stop_tone = aps_stop_tone;
     waps->aps_ops.set_voice_volume = aps_set_voice_volume;
     waps->aps_ops.move_effects = aps_move_effects;
+#if WRAPPED_AUDIO_POLICY_VERSION >= ANDROID_VERSION(4, 1)
     waps->aps_ops.load_hw_module = aps_load_hw_module;
     waps->aps_ops.open_output_on_module = aps_open_output_on_module;
     waps->aps_ops.open_input_on_module = aps_open_input_on_module;
+#endif
 
-   *wrapped_service = waps;
-   *wrapped_aps_ops = &waps->aps_ops;
+   *service = waps;
+   *aps_ops = &waps->aps_ops;
 
    return 0;
 }

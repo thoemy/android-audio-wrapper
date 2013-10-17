@@ -26,21 +26,21 @@
 #include <cutils/log.h>
 
 #include "common.h"
-#include "ics_audio.h"
+#include "include/4.0/hardware/audio.h"
 
 struct wrapper_audio_device {
     struct audio_hw_device device;
-    struct ics_audio_hw_device *wrapped_device;
+    struct wrapper::audio_hw_device *wrapped_device;
 };
 
 struct wrapper_stream_out {
     struct audio_stream_out stream;
-    struct ics_audio_stream_out *wrapped_stream;
+    struct wrapper::audio_stream_out *wrapped_stream;
 };
 
 struct wrapper_stream_in {
     struct audio_stream_in stream;
-    struct ics_audio_stream_in *wrapped_stream;
+    struct wrapper::audio_stream_in *wrapped_stream;
 };
 
 
