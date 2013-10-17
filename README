@@ -12,10 +12,16 @@ The wrapper does the following things:
    * wraps audio_policy_service_ops
    * converts the audio_devices_t enum between the ICS and JB format
 
-
-
 Only tested on endeavoru CM 10.2 nightlies.
 
+
+Defines
+-------
+
+CONVERT_AUDIO_DEVICES_T: Define if you want to convert audio_devices_t flags
+                         between API <= 4.1 and API >= 4.2.
+NO_HTC_POLICY_MANAGER:   Define if you are using the endeavoru Tegra3 ICS
+                         audio blob but the default audio_policy.
 
 TODO
 ----

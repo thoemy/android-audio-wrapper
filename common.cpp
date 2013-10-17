@@ -58,7 +58,7 @@ int load_vendor_module(const hw_module_t* wrapper_module, const char* name,
 
 #ifdef CONVERT_AUDIO_DEVICES_T
 static audio_devices_t convert_ics_to_jb(const ics_audio_devices_t ics_device)
- {
+{
     audio_devices_t device = 0;
 
     if((ics_device & ~ICS_AUDIO_DEVICE_OUT_ALL) == 0) {
@@ -109,6 +109,17 @@ static ics_audio_devices_t convert_jb_to_ics(const audio_devices_t device)
         ics_device = (device & DEVICE_IN_MASK) << 16;
         if((device & AUDIO_DEVICE_IN_DEFAULT) == AUDIO_DEVICE_IN_DEFAULT)
             ics_device |= ICS_AUDIO_DEVICE_IN_DEFAULT;
+
+#ifdef NO_HTC_POLICY_MANAGER
+        // audio_policy.default wants to open BUILTIN_MIC for some input source
+        // which results in silence. The HTC audio_policy uses VOICE_CALL
+        // instead. Also the BUILTIN_MIC bit of get_supported_devices() is not
+        // set. So this seems the correct thing to do.
+        if((device & AUDIO_DEVICE_IN_BUILTIN_MIC) == AUDIO_DEVICE_IN_BUILTIN_MIC) {
+            ics_device &= ~AUDIO_DEVICE_IN_BUILTIN_MIC;
+            ics_device |= ICS_AUDIO_DEVICE_IN_VOICE_CALL;
+        }
+#endif
     } else {
         // I guess we should never land here
         ALOGW("%s: audio_devices_t is neither input nor output: 0x%x",
@@ -158,7 +169,7 @@ char * fixup_audio_parameters(const char *kv_pairs, flags_conversion_mode_t mode
         // Adds value as a singed int that might be negative. Doesn't cause any
         // problems because the bit representation is the same.
         param.addInt(key, value);
-        
+
         // When param is freed the string returned by param.toString() seems to
         // be freed as well, so copy it.
         android::String8 fixed_kv_pairs = param.toString();
