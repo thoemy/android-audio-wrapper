@@ -1,4 +1,4 @@
-/*
+#/*
  * Copyright (C) 2011 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,8 +15,8 @@
  */
 
 
-#ifndef ANDROID_AUDIO_POLICY_INTERFACE_H
-#define ANDROID_AUDIO_POLICY_INTERFACE_H
+#ifndef WRAPPED_ANDROID_AUDIO_POLICY_INTERFACE_H
+#define WRAPPED_ANDROID_AUDIO_POLICY_INTERFACE_H
 
 #include <stdint.h>
 #include <sys/cdefs.h>
@@ -27,58 +27,9 @@
 #include <system/audio.h>
 #include <system/audio_policy.h>
 
+namespace wrapper {
+
 __BEGIN_DECLS
-
-/**
- * The id of this module
- */
-#define AUDIO_POLICY_HARDWARE_MODULE_ID "audio_policy"
-
-/**
- * Name of the audio devices to open
- */
-#define AUDIO_POLICY_INTERFACE "policy"
-
-/* ---------------------------------------------------------------------------- */
-
-/*
- * The audio_policy and audio_policy_service_ops structs define the
- * communication interfaces between the platform specific audio policy manager
- * and Android generic audio policy manager.
- * The platform specific audio policy manager must implement methods of the
- * audio_policy struct.
- * This implementation makes use of the audio_policy_service_ops to control
- * the activity and configuration of audio input and output streams.
- *
- * The platform specific audio policy manager is in charge of the audio
- * routing and volume control policies for a given platform.
- * The main roles of this module are:
- *   - keep track of current system state (removable device connections, phone
- *     state, user requests...).
- *   System state changes and user actions are notified to audio policy
- *   manager with methods of the audio_policy.
- *
- *   - process get_output() queries received when AudioTrack objects are
- *     created: Those queries return a handler on an output that has been
- *     selected, configured and opened by the audio policy manager and that
- *     must be used by the AudioTrack when registering to the AudioFlinger
- *     with the createTrack() method.
- *   When the AudioTrack object is released, a release_output() query
- *   is received and the audio policy manager can decide to close or
- *   reconfigure the output depending on other streams using this output and
- *   current system state.
- *
- *   - similarly process get_input() and release_input() queries received from
- *     AudioRecord objects and configure audio inputs.
- *   - process volume control requests: the stream volume is converted from
- *     an index value (received from UI) to a float value applicable to each
- *     output as a function of platform specific settings and current output
- *     route (destination device). It also make sure that streams are not
- *     muted if not allowed (e.g. camera shutter sound in some countries).
- */
-
-/* XXX: this should be defined OUTSIDE of frameworks/base */
-struct effect_descriptor_s;
 
 struct audio_policy {
     /*
@@ -133,7 +84,7 @@ struct audio_policy {
                                     uint32_t samplingRate,
                                     uint32_t format,
                                     uint32_t channels,
-                                    audio_policy_output_flags_t flags);
+                                    audio_output_flags_t flags);
 
     /* indicates to the audio policy manager that the output starts being used
      * by corresponding stream. */
@@ -201,10 +152,10 @@ struct audio_policy {
 
     /* Audio effect management */
     audio_io_handle_t (*get_output_for_effect)(struct audio_policy *pol,
-                                            struct effect_descriptor_s *desc);
+                                               const struct effect_descriptor_s *desc);
 
     int (*register_effect)(struct audio_policy *pol,
-                           struct effect_descriptor_s *desc,
+                           const struct effect_descriptor_s *desc,
                            audio_io_handle_t output,
                            uint32_t strategy,
                            int session,
@@ -240,12 +191,12 @@ struct audio_policy_service_ops {
      * suitable or not and act accordingly.
      */
     audio_io_handle_t (*open_output)(void *service,
-                                     uint32_t *pDevices,
+                                     audio_devices_t *pDevices,
                                      uint32_t *pSamplingRate,
-                                     uint32_t *pFormat,
-                                     uint32_t *pChannels,
+                                     audio_format_t *pFormat,
+                                     audio_channel_mask_t *pChannelMask,
                                      uint32_t *pLatencyMs,
-                                     audio_policy_output_flags_t flags);
+                                     audio_output_flags_t flags);
 
     /* creates a special output that is duplicated to the two outputs passed as
      * arguments. The duplication is performed by
@@ -275,11 +226,11 @@ struct audio_policy_service_ops {
 
     /* opens an audio input */
     audio_io_handle_t (*open_input)(void *service,
-                                    uint32_t *pDevices,
+                                    audio_devices_t *pDevices,
                                     uint32_t *pSamplingRate,
-                                    uint32_t *pFormat,
-                                    uint32_t *pChannels,
-                                    uint32_t acoustics);
+                                    audio_format_t *pFormat,
+                                    audio_channel_mask_t *pChannelMask,
+                                    audio_in_acoustics_t acoustics);
 
     /* closes an audio input */
     int (*close_input)(void *service, audio_io_handle_t input);
@@ -345,15 +296,6 @@ struct audio_policy_service_ops {
 
 /**********************************************************************/
 
-/**
- * Every hardware module must have a data structure named HAL_MODULE_INFO_SYM
- * and the fields of this data structure must begin with hw_module_t
- * followed by module specific information.
- */
-typedef struct audio_policy_module {
-    struct hw_module_t common;
-} audio_policy_module_t;
-
 struct audio_policy_device {
     struct hw_device_t common;
 
@@ -383,4 +325,6 @@ static inline int audio_policy_dev_close(struct audio_policy_device* device)
 
 __END_DECLS
 
-#endif  // ANDROID_AUDIO_POLICY_INTERFACE_H
+} // namespace wrapper
+
+#endif  // WRAPPED_ANDROID_AUDIO_POLICY_INTERFACE_H

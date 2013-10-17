@@ -15,14 +15,16 @@
  */
 
 
-#ifndef ANDROID_AUDIO_POLICY_CORE_H
-#define ANDROID_AUDIO_POLICY_CORE_H
+#ifndef WRAPPED_ANDROID_AUDIO_POLICY_CORE_H
+#define WRAPPED_ANDROID_AUDIO_POLICY_CORE_H
 
 #include <stdint.h>
 #include <sys/cdefs.h>
 #include <sys/types.h>
 
 #include <cutils/bitops.h>
+
+namespace wrapper {
 
 __BEGIN_DECLS
 
@@ -103,4 +105,6 @@ static inline bool audio_is_low_visibility(audio_stream_type_t stream)
 
 __END_DECLS
 
-#endif  // ANDROID_AUDIO_POLICY_CORE_H
+} // namespace wrapper
+
+#endif  // WRAPPED_ANDROID_AUDIO_POLICY_CORE_H

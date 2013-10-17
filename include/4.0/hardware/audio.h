@@ -15,8 +15,8 @@
  */
 
 
-#ifndef ANDROID_AUDIO_HAL_INTERFACE_H
-#define ANDROID_AUDIO_HAL_INTERFACE_H
+#ifndef WRAPPED_ANDROID_AUDIO_HAL_INTERFACE_H
+#define WRAPPED_ANDROID_AUDIO_HAL_INTERFACE_H
 
 #include <stdint.h>
 #include <strings.h>
@@ -29,51 +29,9 @@
 #include <system/audio.h>
 #include <hardware/audio_effect.h>
 
+namespace wrapper {
+
 __BEGIN_DECLS
-
-/**
- * The id of this module
- */
-#define AUDIO_HARDWARE_MODULE_ID "audio"
-
-/**
- * Name of the audio devices to open
- */
-#define AUDIO_HARDWARE_INTERFACE "audio_hw_if"
-
-/**************************************/
-
-/**
- *  standard audio parameters that the HAL may need to handle
- */
-
-/**
- *  audio device parameters
- */
-
-/* BT SCO Noise Reduction + Echo Cancellation parameters */
-#define AUDIO_PARAMETER_KEY_BT_NREC "bt_headset_nrec"
-#define AUDIO_PARAMETER_VALUE_ON "on"
-#define AUDIO_PARAMETER_VALUE_OFF "off"
-
-/* TTY mode selection */
-#define AUDIO_PARAMETER_KEY_TTY_MODE "tty_mode"
-#define AUDIO_PARAMETER_VALUE_TTY_OFF "tty_off"
-#define AUDIO_PARAMETER_VALUE_TTY_VCO "tty_vco"
-#define AUDIO_PARAMETER_VALUE_TTY_HCO "tty_hco"
-#define AUDIO_PARAMETER_VALUE_TTY_FULL "tty_full"
-
-/**
- *  audio stream parameters
- */
-
-#define AUDIO_PARAMETER_STREAM_ROUTING "routing"
-#define AUDIO_PARAMETER_STREAM_FORMAT "format"
-#define AUDIO_PARAMETER_STREAM_CHANNELS "channels"
-#define AUDIO_PARAMETER_STREAM_FRAME_COUNT "frame_count"
-#define AUDIO_PARAMETER_STREAM_INPUT_SOURCE "input_source"
-
-/**************************************/
 
 /* common audio stream parameters and operations */
 struct audio_stream {
@@ -102,7 +60,7 @@ struct audio_stream {
     /**
      * audio format - eg. AUDIO_FORMAT_PCM_16_BIT
      */
-    int (*get_format)(const struct audio_stream *stream);
+    audio_format_t (*get_format)(const struct audio_stream *stream);
 
     /* currently unused - use set_parameters with key
      *     AUDIO_PARAMETER_STREAM_FORMAT
@@ -337,7 +295,8 @@ static inline int audio_hw_device_close(struct audio_hw_device* device)
     return device->common.close(&device->common);
 }
 
-
 __END_DECLS
 
-#endif  // ANDROID_AUDIO_INTERFACE_H
+} // namespace wrapper
+
+#endif  // WRAPPED_ANDROID_AUDIO_INTERFACE_H
