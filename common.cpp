@@ -106,7 +106,9 @@ static wrapper::audio_devices_t convert_jb_to_ics(const audio_devices_t devices)
     } else if((devices & AUDIO_DEVICE_BIT_IN) == AUDIO_DEVICE_BIT_IN) {
         // We care only about the first 8 bits since the other cannot be
         // mapped to the old enum.
+        ALOGI("%s: 0x%x, 0x%x, 0x%x", __FUNCTION__, devices & DEVICE_IN_MASK, wrapped_devices, (devices & DEVICE_IN_MASK) << 16);
         wrapped_devices = (devices & DEVICE_IN_MASK) << 16;
+        ALOGI("%s: 0x%x", __FUNCTION__, wrapped_devices);
         if((devices & AUDIO_DEVICE_IN_DEFAULT) == AUDIO_DEVICE_IN_DEFAULT)
             wrapped_devices |= wrapper::AUDIO_DEVICE_IN_DEFAULT;
     } else {
