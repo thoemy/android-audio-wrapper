@@ -8,7 +8,9 @@ LOCAL_SRC_FILES := \
     audio_policy.cpp
 
 LOCAL_SHARED_LIBRARIES := \
-    libhardware liblog libutils libaudioparameter
+    libhardware liblog libutils
+
+LOCAL_STATIC_LIBRARIES := libmedia_helper
 
 LOCAL_CFLAGS := -g -Wall -DCONVERT_AUDIO_DEVICES_T
 
@@ -27,7 +29,9 @@ LOCAL_SRC_FILES := \
     audio_hw.cpp
 
 LOCAL_SHARED_LIBRARIES := \
-    libhardware liblog libutils libaudioparameter
+    libhardware liblog libutils
+
+LOCAL_STATIC_LIBRARIES := libmedia_helper
 
 LOCAL_CFLAGS := -g -Wall -DCONVERT_AUDIO_DEVICES_T
 #LOCAL_CFLAGS += -DNO_HTC_POLICY_MANAGER
