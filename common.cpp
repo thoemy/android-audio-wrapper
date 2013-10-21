@@ -93,7 +93,7 @@ static audio_devices_t convert_ics_to_jb(const ics_audio_devices_t ics_device)
 #define DEVICE_IN_MASK 0xFF
 
 static ics_audio_devices_t convert_jb_to_ics(const audio_devices_t device)
- {
+{
     ics_audio_devices_t ics_device = 0;
 
     if(audio_is_output_devices(device)) {
@@ -109,17 +109,6 @@ static ics_audio_devices_t convert_jb_to_ics(const audio_devices_t device)
         ics_device = (device & DEVICE_IN_MASK) << 16;
         if((device & AUDIO_DEVICE_IN_DEFAULT) == AUDIO_DEVICE_IN_DEFAULT)
             ics_device |= ICS_AUDIO_DEVICE_IN_DEFAULT;
-
-#ifdef NO_HTC_POLICY_MANAGER
-        // audio_policy.default wants to open BUILTIN_MIC for some input source
-        // which results in silence. The HTC audio_policy uses VOICE_CALL
-        // instead. Also the BUILTIN_MIC bit of get_supported_devices() is not
-        // set. So this seems the correct thing to do.
-        if((device & AUDIO_DEVICE_IN_BUILTIN_MIC) == AUDIO_DEVICE_IN_BUILTIN_MIC) {
-            ics_device &= ~AUDIO_DEVICE_IN_BUILTIN_MIC;
-            ics_device |= ICS_AUDIO_DEVICE_IN_VOICE_CALL;
-        }
-#endif
     } else {
         // I guess we should never land here
         ALOGW("%s: audio_devices_t is neither input nor output: 0x%x",
@@ -129,17 +118,43 @@ static ics_audio_devices_t convert_jb_to_ics(const audio_devices_t device)
 
     return ics_device;
 }
+#endif
+
+static ics_audio_devices_t fixup_audio_devices(ics_audio_devices_t device)
+{
+#ifdef NO_HTC_POLICY_MANAGER
+    // audio_policy.default wants to open BUILTIN_MIC for some input source
+    // which results in silence. The HTC audio_policy uses VOICE_CALL
+    // instead. Also the BUILTIN_MIC bit of get_supported_devices() is not
+    // set. So this seems the correct thing to do.
+    if((device & ICS_AUDIO_DEVICE_IN_BUILTIN_MIC) == ICS_AUDIO_DEVICE_IN_BUILTIN_MIC) {
+        ALOGI("%s: BUILTIN_MIC set, setting VOICE_CALL instead", __FUNCTION__);
+        device &= ~ICS_AUDIO_DEVICE_IN_BUILTIN_MIC;
+        device |= ICS_AUDIO_DEVICE_IN_VOICE_CALL;
+    }
+#endif
+    return device;
+}
 
 uint32_t convert_audio_devices(const uint32_t devices, flags_conversion_mode_t mode)
 {
     uint32_t ret;
     switch(mode) {
     case ICS_TO_JB:
+#ifdef CONVERT_AUDIO_DEVICES_T
         ret = convert_ics_to_jb(devices);
+#else
+        ret = devices;
+#endif
         ALOGI("%s: ICS_TO_JB (0x%x -> 0x%x)", __FUNCTION__, devices, ret);
         break;
     case JB_TO_ICS:
+#ifdef CONVERT_AUDIO_DEVICES_T
         ret = convert_jb_to_ics(devices);
+#else
+        ret = devices;
+#endif
+        ret = fixup_audio_devices(ret);
         ALOGI("%s: JB_TO_ICS (0x%x -> 0x%x)", __FUNCTION__, devices, ret);
         break;
     default:
@@ -149,7 +164,6 @@ uint32_t convert_audio_devices(const uint32_t devices, flags_conversion_mode_t m
 
     return ret;
 }
-#endif
 
 char * fixup_audio_parameters(const char *kv_pairs, flags_conversion_mode_t mode)
 {

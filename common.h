@@ -100,16 +100,6 @@ enum {
 
 typedef uint32_t ics_audio_devices_t;
 
-
-#ifdef CONVERT_AUDIO_DEVICES_T
 uint32_t convert_audio_devices(uint32_t devices, flags_conversion_mode_t mode);
-#else
-static inline uint32_t convert_audio_devices(uint32_t devices, flags_conversion_mode_t mode) {
-    (void)(mode); // Don't warn about unused parameter
-    return devices;
-}
-#endif
-
-
 
 #endif // AUDIO_WRAPPER_COMMON_H
