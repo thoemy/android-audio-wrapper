@@ -10,34 +10,32 @@ the framework (ICS_AUDIO_BLOB / MR0_AUDIO_BLOB) or wrap the audio HALs.
 The wrapper does the following things:
    * wraps audio_policy and audio.primary HALs
    * wraps audio_policy_service_ops
-   * converts audio_devices_t enum between API <=4.1 and >= 4.2
+   * converts audio_devices_t enum between Android <=4.1 and >= 4.2 APIs
 
-Only tested on endeavoru CM 10.2 nightlies.
+When the primary audio HAL is wrapped it is possible to use a stock audio policy
+and A2DP HAL (at least in case of endeavoru). This fixes a couple of bugs
+related to incorrect stream volumes and moving streams between devices.
 
 
-Defines
--------
+Confiuration
+------------
 
-CONVERT_AUDIO_DEVICES_T: Define if you want to convert audio_devices_t flags
-                         between API <= 4.1 and API >= 4.2.
-NO_HTC_POLICY_MANAGER:   Define if you are using the endeavoru Tegra3 ICS
-                         audio blob but the default audio_policy.
+See config.mk for possible configuration variables.
+
 
 TODO
 ----
 
 * Grep for TODO :)
-* Other parameters passed with the set/get_parameters functions contain
-  audio_devices_t values that might need to be converted
 * Better logging configurability (maybe at runtime)
 * Expects the vendor blobs to be named vendor-audio_policy.tegra.so and
   vendor-audio.primary.tegra.so at the moment.
+* More testing
 
 
 Known Issues
 ------------
 
-* Sound recorder behaves weird when playing your recording
 * set_stream_volume_index_for_device is not properly emulated resulting in wrong
   volumes for streams after the device is rebooted. This is caused by
   AudioFlinger setting the volumes for each stream on each device. Since the
@@ -67,6 +65,8 @@ Catch interesing output:
 
 Flags
 -----
+
+Following table lists the audio_devices enum values.
 
 Bit Nr. Hex Value API <= 4.1                                 API >= 4.2 output devices                  API >= 4.2 input devices
 ------- --------- ------------------------------------------ ------------------------------------------ ------------------------------------

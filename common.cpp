@@ -174,7 +174,6 @@ char * fixup_audio_parameters(const char *kv_pairs, flags_conversion_mode_t mode
     android::AudioParameter param = android::AudioParameter(android::String8(kv_pairs));
     android::String8 key = android::String8(android::AudioParameter::keyRouting);
 
-    // TODO: There are more parameters that pass audio_devices_t values
     if (param.getInt(key, value) == android::NO_ERROR) {
         ALOGI("%s: Fixing routing value (value: %x, mode: %d)", __FUNCTION__,
               value, mode);
