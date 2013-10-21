@@ -138,7 +138,7 @@ static int out_set_parameters(struct audio_stream *stream, const char *kvpairs)
     ALOGI("%s: kvpairs: %s", __FUNCTION__, kvpairs);
     int ret;
     char * fixed_kvpairs = fixup_audio_parameters(kvpairs, JB_TO_ICS);
-    ret = WRAPPED_STREAM_OUT_COMMON_CALL(stream, set_parameters, kvpairs);
+    ret = WRAPPED_STREAM_OUT_COMMON_CALL(stream, set_parameters, fixed_kvpairs);
     free(fixed_kvpairs);
     return ret;
 }
@@ -243,7 +243,7 @@ static int in_set_parameters(struct audio_stream *stream, const char *kvpairs)
     ALOGI("%s: kvpairs: %s", __FUNCTION__, kvpairs);
     int ret;
     char * fixed_kvpairs = fixup_audio_parameters(kvpairs, JB_TO_ICS);
-    ret = WRAPPED_STREAM_IN_COMMON_CALL(stream, set_parameters, kvpairs);
+    ret = WRAPPED_STREAM_IN_COMMON_CALL(stream, set_parameters, fixed_kvpairs);
     free(fixed_kvpairs);
     return ret;
 }
