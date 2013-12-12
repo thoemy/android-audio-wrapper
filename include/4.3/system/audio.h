@@ -15,8 +15,8 @@
  */
 
 
-#ifndef ANDROID_AUDIO_CORE_H
-#define ANDROID_AUDIO_CORE_H
+#ifndef WRAPPER_ANDROID_AUDIO_CORE_H
+#define WRAPPER_ANDROID_AUDIO_CORE_H
 
 #include <stdbool.h>
 #include <stdint.h>

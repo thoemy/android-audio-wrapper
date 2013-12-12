@@ -23,6 +23,7 @@
 #include <cutils/log.h>
 
 #include "common.h"
+#include "include/audio.h"
 
 int load_vendor_module(const hw_module_t* wrapper_module, const char* name,
                        hw_device_t** device, const char* inst)

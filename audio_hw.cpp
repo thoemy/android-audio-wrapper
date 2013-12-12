@@ -22,11 +22,10 @@
 #include <pthread.h>
 #include <stdint.h>
 #include <sys/time.h>
-
 #include <cutils/log.h>
 
 #include "common.h"
-#include "include/4.0/hardware/audio.h"
+#include "include/audio.h"
 
 struct wrapper_audio_device {
     struct audio_hw_device device;
@@ -186,7 +185,7 @@ static int out_remove_audio_effect(const struct audio_stream *stream, effect_han
 }
 
 #if 0
-#ifndef ICS_AUDIO_BLOB
+#if WRAPPED_AUDIO_HAL_VERSION > ANDROID_VERSION(4, 0)
 static int out_get_next_write_timestamp(const struct audio_stream_out *stream,
                                         int64_t *timestamp)
 {
@@ -285,7 +284,7 @@ static int in_remove_audio_effect(const struct audio_stream *stream, effect_hand
 }
 
 static int adev_open_output_stream(struct audio_hw_device *dev,
-#ifndef ICS_AUDIO_BLOB
+#if WRAPPED_AUDIO_HAL_VERSION > ANDROID_VERSION(4, 0)
                               audio_io_handle_t handle,
                               audio_devices_t devices,
                               audio_output_flags_t flags,
@@ -309,8 +308,8 @@ static int adev_open_output_stream(struct audio_hw_device *dev,
 
     devices = convert_audio_devices(devices, JB_TO_ICS);
 
-#ifdef ICS_AUDIO_BLOB
-    ret = WRAPPED_DEVICE_CALL(dev, open_output_stream, devices, format, channels, sample_rate,
+#if WRAPPED_AUDIO_HAL_VERSION > ANDROID_VERSION(4, 0)
+    ret = WRAPPED_DEVICE_CALL(dev, open_output_stream, handle, devices, flags, config,
                               &WRAPPED_STREAM_OUT(out));
 #else
     ret = WRAPPED_DEVICE_CALL(dev, open_output_stream, devices, (int *)&config->format,
@@ -337,7 +336,7 @@ static int adev_open_output_stream(struct audio_hw_device *dev,
     out->stream.set_volume = out_set_volume;
     out->stream.write = out_write;
     out->stream.get_render_position = out_get_render_position;
-#ifndef ICS_AUDIO_BLOB
+#if WRAPPED_AUDIO_HAL_VERSION > ANDROID_VERSION(4, 0)
     out->stream.get_next_write_timestamp = NULL; //out_get_next_write_timestamp;
 #endif
 
@@ -438,12 +437,11 @@ static int adev_get_mic_mute(const struct audio_hw_device *dev, bool *state)
 }
 
 
-#ifndef ICS_AUDIO_BLOB
+#if WRAPPED_AUDIO_HAL_VERSION > ANDROID_VERSION(4, 0)
 static size_t adev_get_input_buffer_size(const struct audio_hw_device *dev,
                                     const struct audio_config *config)
 {
-    RETURN_WRAPPED_DEVICE_CALL(dev, get_input_buffer_size, config->sample_rate,
-                               config->format, popcount(config->channel_mask));
+    RETURN_WRAPPED_DEVICE_CALL(dev, get_input_buffer_size, config);
 }
 #else
 static size_t adev_get_input_buffer_size(const struct audio_hw_device *dev,
@@ -455,7 +453,7 @@ static size_t adev_get_input_buffer_size(const struct audio_hw_device *dev,
 }
 #endif
 
-#ifndef ICS_AUDIO_BLOB
+#if WRAPPED_AUDIO_HAL_VERSION > ANDROID_VERSION(4, 0)
 static int adev_open_input_stream(struct audio_hw_device *dev,
                              audio_io_handle_t handle,
                              audio_devices_t devices,
@@ -480,13 +478,13 @@ static int adev_open_input_stream(struct audio_hw_device *dev, uint32_t devices,
 
     devices = convert_audio_devices(devices, JB_TO_ICS);
 
-#ifndef ICS_AUDIO_BLOB
+#if WRAPPED_AUDIO_HAL_VERSION > ANDROID_VERSION(4, 0)
+    ret = WRAPPED_DEVICE_CALL(dev, open_input_stream, handle, devices, config,
+                              &WRAPPED_STREAM_IN(in));
+#else
     ret = WRAPPED_DEVICE_CALL(dev, open_input_stream, devices, (int *)&config->format,
                               &config->channel_mask, &config->sample_rate,
                               (audio_in_acoustics_t)0, &WRAPPED_STREAM_IN(in));
-#else
-    ret = WRAPPED_DEVICE_CALL(dev, open_input_stream, devices, format, channels,
-                              sample_rate, acoustics, &WRAPPED_STREAM_IN(in));
 #endif
     if(ret < 0)
         goto err_open;
@@ -559,7 +557,7 @@ static int adev_open(const hw_module_t* module, const char* name,
     }
 
     adev->device.common.tag = HARDWARE_DEVICE_TAG;
-#ifndef ICS_AUDIO_BLOB
+#if WRAPPED_AUDIO_HAL_VERSION > ANDROID_VERSION(4, 0)
     adev->device.common.version = AUDIO_DEVICE_API_VERSION_2_0;
 #else
     adev->device.common.version = AUDIO_DEVICE_API_VERSION_1_0;
@@ -571,7 +569,7 @@ static int adev_open(const hw_module_t* module, const char* name,
     adev->device.init_check = adev_init_check;
     adev->device.set_voice_volume = adev_set_voice_volume;
     adev->device.set_master_volume = adev_set_master_volume;
-#ifndef ICS_AUDIO_BLOB
+#if WRAPPED_AUDIO_HAL_VERSION > ANDROID_VERSION(4, 0)
     adev->device.get_master_volume = NULL; //adev_get_master_volume;
     adev->device.set_master_mute = NULL; //adev_set_master_mute;
     adev->device.get_master_mute = NULL; //adev_get_master_mute;

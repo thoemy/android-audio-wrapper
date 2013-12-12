@@ -15,8 +15,8 @@
  */
 
 
-#ifndef ANDROID_AUDIO_HAL_INTERFACE_H
-#define ANDROID_AUDIO_HAL_INTERFACE_H
+#ifndef WRAPPER_ANDROID_AUDIO_HAL_INTERFACE_H
+#define WRAPPER_ANDROID_AUDIO_HAL_INTERFACE_H
 
 #include <stdint.h>
 #include <strings.h>
@@ -29,103 +29,9 @@
 #include <system/audio.h>
 #include <hardware/audio_effect.h>
 
+namespace wrapper {
+
 __BEGIN_DECLS
-
-/**
- * The id of this module
- */
-#define AUDIO_HARDWARE_MODULE_ID "audio"
-
-/**
- * Name of the audio devices to open
- */
-#define AUDIO_HARDWARE_INTERFACE "audio_hw_if"
-
-
-/* Use version 0.1 to be compatible with first generation of audio hw module with version_major
- * hardcoded to 1. No audio module API change.
- */
-#define AUDIO_MODULE_API_VERSION_0_1 HARDWARE_MODULE_API_VERSION(0, 1)
-#define AUDIO_MODULE_API_VERSION_CURRENT AUDIO_MODULE_API_VERSION_0_1
-
-/* First generation of audio devices had version hardcoded to 0. all devices with versions < 1.0
- * will be considered of first generation API.
- */
-#define AUDIO_DEVICE_API_VERSION_0_0 HARDWARE_DEVICE_API_VERSION(0, 0)
-#define AUDIO_DEVICE_API_VERSION_1_0 HARDWARE_DEVICE_API_VERSION(1, 0)
-#define AUDIO_DEVICE_API_VERSION_CURRENT AUDIO_DEVICE_API_VERSION_1_0
-
-/**
- * List of known audio HAL modules. This is the base name of the audio HAL
- * library composed of the "audio." prefix, one of the base names below and
- * a suffix specific to the device.
- * e.g: audio.primary.goldfish.so or audio.a2dp.default.so
- */
-
-#define AUDIO_HARDWARE_MODULE_ID_PRIMARY "primary"
-#define AUDIO_HARDWARE_MODULE_ID_A2DP "a2dp"
-#define AUDIO_HARDWARE_MODULE_ID_USB "usb"
-
-/**************************************/
-
-/**
- *  standard audio parameters that the HAL may need to handle
- */
-
-/**
- *  audio device parameters
- */
-
-/* BT SCO Noise Reduction + Echo Cancellation parameters */
-#define AUDIO_PARAMETER_KEY_BT_NREC "bt_headset_nrec"
-#define AUDIO_PARAMETER_VALUE_ON "on"
-#define AUDIO_PARAMETER_VALUE_OFF "off"
-
-/* TTY mode selection */
-#define AUDIO_PARAMETER_KEY_TTY_MODE "tty_mode"
-#define AUDIO_PARAMETER_VALUE_TTY_OFF "tty_off"
-#define AUDIO_PARAMETER_VALUE_TTY_VCO "tty_vco"
-#define AUDIO_PARAMETER_VALUE_TTY_HCO "tty_hco"
-#define AUDIO_PARAMETER_VALUE_TTY_FULL "tty_full"
-
-/* A2DP sink address set by framework */
-#define AUDIO_PARAMETER_A2DP_SINK_ADDRESS "a2dp_sink_address"
-
-/* Screen state */
-#define AUDIO_PARAMETER_KEY_SCREEN_STATE "screen_state"
-
-/**
- *  audio stream parameters
- */
-
-#define AUDIO_PARAMETER_STREAM_ROUTING "routing"            // audio_devices_t
-#define AUDIO_PARAMETER_STREAM_FORMAT "format"              // audio_format_t
-#define AUDIO_PARAMETER_STREAM_CHANNELS "channels"          // audio_channel_mask_t
-#define AUDIO_PARAMETER_STREAM_FRAME_COUNT "frame_count"    // size_t
-#define AUDIO_PARAMETER_STREAM_INPUT_SOURCE "input_source"  // audio_source_t
-#define AUDIO_PARAMETER_STREAM_SAMPLING_RATE "sampling_rate" // uint32_t
-
-/* Query supported formats. The response is a '|' separated list of strings from
- * audio_format_t enum e.g: "sup_formats=AUDIO_FORMAT_PCM_16_BIT" */
-#define AUDIO_PARAMETER_STREAM_SUP_FORMATS "sup_formats"
-/* Query supported channel masks. The response is a '|' separated list of strings from
- * audio_channel_mask_t enum e.g: "sup_channels=AUDIO_CHANNEL_OUT_STEREO|AUDIO_CHANNEL_OUT_MONO" */
-#define AUDIO_PARAMETER_STREAM_SUP_CHANNELS "sup_channels"
-/* Query supported sampling rates. The response is a '|' separated list of integer values e.g:
- * "sup_sampling_rates=44100|48000" */
-#define AUDIO_PARAMETER_STREAM_SUP_SAMPLING_RATES "sup_sampling_rates"
-
-
-/**************************************/
-
-/* common audio stream configuration parameters */
-struct audio_config {
-    uint32_t sample_rate;
-    audio_channel_mask_t channel_mask;
-    audio_format_t  format;
-};
-
-typedef struct audio_config audio_config_t;
 
 /* common audio stream parameters and operations */
 struct audio_stream {
@@ -288,37 +194,7 @@ struct audio_stream_in {
 };
 typedef struct audio_stream_in audio_stream_in_t;
 
-/**
- * return the frame size (number of bytes per sample).
- */
-static inline size_t audio_stream_frame_size(struct audio_stream *s)
-{
-    size_t chan_samp_sz;
-
-    switch (s->get_format(s)) {
-    case AUDIO_FORMAT_PCM_16_BIT:
-        chan_samp_sz = sizeof(int16_t);
-        break;
-    case AUDIO_FORMAT_PCM_8_BIT:
-    default:
-        chan_samp_sz = sizeof(int8_t);
-        break;
-    }
-
-    return popcount(s->get_channels(s)) * chan_samp_sz;
-}
-
-
 /**********************************************************************/
-
-/**
- * Every hardware module must have a data structure named HAL_MODULE_INFO_SYM
- * and the fields of this data structure must begin with hw_module_t
- * followed by module specific information.
- */
-struct audio_module {
-    struct hw_module_t common;
-};
 
 struct audio_hw_device {
     struct hw_device_t common;
@@ -346,6 +222,10 @@ struct audio_hw_device {
      * the software mixer will emulate this capability.
      */
     int (*set_master_volume)(struct audio_hw_device *dev, float volume);
+
+#ifdef HTC_AUDIO_BLOB
+    int (*unknown_func1)(void);
+#endif
 
     /**
      * Get the current master volume value for the HAL, if the HAL supports
@@ -427,4 +307,6 @@ static inline int audio_hw_device_close(struct audio_hw_device* device)
 
 __END_DECLS
 
-#endif  // ANDROID_AUDIO_INTERFACE_H
+} // namespace wrapper
+
+#endif  // WRAPPER_ANDROID_AUDIO_INTERFACE_H

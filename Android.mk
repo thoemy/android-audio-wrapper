@@ -1,3 +1,5 @@
+ifeq ($(ENABLE_AUDIO_WRAPPER), true)
+
 LOCAL_PATH := $(call my-dir)
 
 include $(LOCAL_PATH)/config.mk
@@ -8,15 +10,16 @@ L_CFLAGS := -g -Wall
 # Process config
 #
 
-ifeq ($(FRAMEWORK_EXPECTS_ICS_AUDIO_BLOB),true)
-  L_CFLAGS += -DICS_AUDIO_BLOB
-else
-  L_CFLAGS += -DCONVERT_AUDIO_DEVICES_T
-endif
+#ifeq ($(FRAMEWORK_EXPECTS_ICS_AUDIO_BLOB),true)
+#  L_CFLAGS += -DICS_AUDIO_BLOB
+#else
+#  L_CFLAGS += -DCONVERT_AUDIO_DEVICES_T
+#endif
 
 ifneq ($(BUILD_AUDIO_POLICY_WRAPPER),true)
   ifeq ($(HTC_ICS_AUDIO_BLOB),true)
-    L_CFLAGS += -DNO_HTC_POLICY_MANAGER
+    #L_CFLAGS += -DNO_HTC_POLICY_MANAGER
+    L_CFLAGS += -DHTC_AUDIO_BLOB
   endif
 endif
 
@@ -65,6 +68,26 @@ LOCAL_MODULE_PATH := $(TARGET_OUT_SHARED_LIBRARIES)/hw
 LOCAL_MODULE := audio.primary.$(TARGET_BOARD_PLATFORM)
 LOCAL_MODULE_TAGS := optional
 
-include $(BUILD_SHARED_LIBRARY)
+#include $(BUILD_SHARED_LIBRARY)
 #include $(BUILD_HEAPTRACKED_SHARED_LIBRARY)
 endif
+
+#
+# Test binary
+#
+include $(CLEAR_VARS)
+
+LOCAL_SRC_FILES := \
+    test.cpp
+
+LOCAL_SHARED_LIBRARIES := \
+    libhardware liblog libutils
+
+LOCAL_CFLAGS := $(L_CFLAGS)
+
+LOCAL_MODULE := audio_primary_test
+LOCAL_MODULE_TAGS := optional
+
+include $(BUILD_EXECUTABLE)
+
+endif # ENABLE_AUDIO_WRAPPER

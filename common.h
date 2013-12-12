@@ -21,14 +21,24 @@
 #include <hardware/audio.h>
 #include <hardware/hardware.h>
 
-#include "include/4.0/system/audio.h"
-
-
 #define ANDROID_VERSION(maj, min) \
     (maj * 10 + min)
 
-#define WRAPPED_AUDIO_POLICY_VERSION ANDROID_VERSION(4, 0)
+#ifdef ICS_AUDIO_BLOB
 #define WRAPPED_AUDIO_HAL_VERSION ANDROID_VERSION(4, 0)
+#define WRAPPED_AUDIO_POLICY_VERSION ANDROID_VERSION(4, 0)
+#else
+#define WRAPPED_AUDIO_HAL_VERSION ANDROID_VERSION(4, 1)
+#define WRAPPED_AUDIO_POLICY_VERSION ANDROID_VERSION(4, 1)
+#endif
+
+
+#if WRAPPED_AUDIO_HAL_VERSION < ANDROID_VERSION(4, 2)
+//#define CONVERT_AUDIO_DEVICES_T
+#elif WRAPPED_AUDIO_POLICY_VERSION < ANDROID_VERSION(4, 2)
+//#define CONVERT_AUDIO_DEVICES_T
+#endif
+
 
 enum flags_conversion_mode {
     ICS_TO_JB,
